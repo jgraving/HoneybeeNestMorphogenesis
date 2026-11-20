@@ -1,6 +1,6 @@
 """Persist and reconstruct the full per-hive model-output ``results`` dict.
 
-``evaluate_spatial_classifier`` (see ``smitheebe/eval.py``) returns a dict::
+``evaluate_spatial_classifier`` (see ``combinator/eval.py``) returns a dict::
 
     {
         (k, d, h, w, pos, ctx, int): {          # one entry per model config
@@ -31,8 +31,13 @@ Storage:
 
 Usage (as a module)::
 
-    python -m smitheebe.results_io save   RESULTS_DIR
-    python -m smitheebe.results_io load   RESULTS_DIR   (prints shapes)
+    python -m combinator.results_io save   RESULTS_DIR
+    python -m combinator.results_io load   RESULTS_DIR   (prints shapes)
+
+Note: the ``results/`` directory committed with this repository was written by
+the pre-rename package and its ``manifest.json`` still carries the format
+string ``smitheebe.results v1``; that string is not validated on load, so the
+committed results verify fine.  New saves write ``combinator.results v1``.
 """
 
 from __future__ import annotations
@@ -84,7 +89,7 @@ def save_results(results: dict, outdir: str) -> str:
     """Write ``results`` to ``outdir`` as per-(config, hive) ``.npz`` files
     plus ``manifest.json``.  Returns the manifest path."""
     os.makedirs(outdir, exist_ok=True)
-    manifest = {"format": "smitheebe.results v1", "fields": list(FIELDS)}
+    manifest = {"format": "combinator.results v1", "fields": list(FIELDS)}
     models = {}
     for key, out in results.items():
         name = key_to_name(key)

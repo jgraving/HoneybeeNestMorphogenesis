@@ -9,7 +9,7 @@ Code and model weights for the honeybee nest content study in
 
 This repository contains
 
-* **`smitheebe/`** — a Python package porting the autoregressive
+* **`combinator/`** — a Python package porting the autoregressive
   masked-convolutional model and its data pipeline (training, evaluation,
   and figure generation) from the original analysis notebooks.
 * **`models/`** — the eight fitted paper model checkpoints
@@ -64,9 +64,9 @@ e.g. run with `CUDA_VISIBLE_DEVICES=1` to pin a specific card).
 
 ```python
 import numpy as np
-from smitheebe import load_grids, map_all_labels, process_grids, build_eval_hives
-from smitheebe import evaluate_spatial_classifier
-from smitheebe.models import load_any
+from combinator import load_grids, map_all_labels, process_grids, build_eval_hives
+from combinator import evaluate_spatial_classifier
+from combinator.models import load_any
 
 # 1) Load the detailed 21-class masks and run the paper's spatial pipeline
 #    (class remap -> phase-correlation alignment to a global mean wood
@@ -89,10 +89,10 @@ print(results["hives"][0]["predictions"][0].argmax())  # ...
 Regenerate the committed figures and CSV from the committed weights:
 
 ```bash
-uv run python -m smitheebe.make_figures \
+uv run python -m combinator.make_figures \
     --data path/to/AllColoniesCombinedDS48v2.npy \
     --models-dir models --outdir figures_out
-CUDA_VISIBLE_DEVICES=1 uv run python -m smitheebe.make_figures \
+CUDA_VISIBLE_DEVICES=1 uv run python -m combinator.make_figures \
     --data ... --device cuda:0   # GPU
 ```
 
@@ -100,14 +100,14 @@ Reconstruct the committed `results/` directory into a plain dict in memory
 (with SHA-256 verification):
 
 ```python
-from smitheebe.results_io import load_results
+from combinator.results_io import load_results
 results = load_results("results")   # {config_tuple: {"hives": [...]}}
 ```
 
 Validate an unpacked `results/` copy at any time:
 
 ```bash
-uv run python -m smitheebe.results_io verify results
+uv run python -m combinator.results_io verify results
 ```
 
 ## Data and provenance
@@ -143,14 +143,14 @@ input geometry to **(depth, height, width) = (20, 52, 104)**: 20 = 10
 combined frame-sides (Side A + Side B of each of the 10 frames, stored
 interleaved), and 52 × 104 is the mean-wood bounding-box crop (margin 1,
 threshold 0.5) of the aligned 77 × 116 comb image — exactly what
-`smitheebe.preprocessing.process_grids` computes. The weights (e.g. the
+`combinator.preprocessing.process_grids` computes. The weights (e.g. the
 `positional_embedding` shape `(1, 128, 20, 52, 104)`) are authoritative and
 the code matches them exactly; loading is strict (`weights_only=True`,
 `load_state_dict` strict).
 
 ## Model
 
-`SpatialClassifier` (see `smitheebe/models.py` and the first-author
+`SpatialClassifier` (see `combinator/models.py` and the first-author
 notebook it ports) is a per-voxel autoregressive content classifier:
 
 * **Class embedding**: a learned (classes × 128) table maps each voxel's

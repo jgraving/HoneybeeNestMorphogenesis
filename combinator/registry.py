@@ -5,7 +5,7 @@ autoregressive model (the ``spatial_classifier_v2_*`` family,
 ``interaction=1``, ``embedding_dim=128``, ``kernel_size=3``): a k=1 global
 baseline plus the 3 x 1D, 2D and 3D spatial-axis configurations at kernel 3.
 Figure 6 averages the 1D/2D/3D configurations and shows the k=1 baseline
-dashed.  All eight load with ``smitheebe.models.from_config`` at the canonical
+dashed.  All eight load with ``combinator.models.from_config`` at the canonical
 grid geometry (20, 52, 104) -- see ``MANIFEST.md`` in ``models/`` for the
 per-file configuration and provenance.
 """

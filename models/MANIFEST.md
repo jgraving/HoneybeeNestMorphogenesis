@@ -27,7 +27,7 @@ describing this averaging, but the legend text and the supplemental caption
 identify the figure as S11.)
 
 All files load strictly (`weights_only=True`, strict `load_state_dict`) through
-`smitheebe.models.load_any(path)` — the filename encodes the architecture, and
+`combinator.models.load_any(path)` — the filename encodes the architecture, and
 every file matches the geometry the `positional_embedding` weights fix:
 input `(weeks, 20, 52, 104)`.
 
@@ -79,7 +79,7 @@ SHA-256.
   `pl.seed_everything(42, workers=True)`; the configuration grid (seven
   k=3 configs + the k=1 baseline) is built there, and the evaluation
   convention (6 control + 6 physically shuffled + 6 simulated frame-pair
-  shuffles, seeds 42+0…5) is the one reproduced by `smitheebe.dataset`.
+  shuffles, seeds 42+0…5) is the one reproduced by `combinator.dataset`.
   In that notebook the training-launch cell and the width-flip augmentation
   block are commented out — the checkpoints in this directory were produced
   by that training pipeline ahead of time and committed as artifacts; they
@@ -89,7 +89,7 @@ SHA-256.
   positional bias). Those are the pre-crop sizes from an early analysis stage;
   the committed weights (e.g. the `positional_embedding` shape
   `(1, 128, 20, 52, 104)`) fix the effective geometry at **(20, 52, 104)**,
-  which is exactly what `smitheebe.preprocessing.process_grids` produces
+  which is exactly what `combinator.preprocessing.process_grids` produces
   (mean-wood bounding-box crop, margin 1, threshold 0.5, of the aligned
   77×116 comb images). The weights are authoritative; loading is strict, so a
   mismatched crop fails loudly.
@@ -97,8 +97,8 @@ SHA-256.
 ## Using the checkpoints
 
 ```python
-from smitheebe.models import load_any
-from smitheebe import evaluate_spatial_classifier, build_eval_hives, \
+from combinator.models import load_any
+from combinator import evaluate_spatial_classifier, build_eval_hives, \
     load_grids, map_all_labels, process_grids
 
 grids = process_grids(map_all_labels(load_grids("AllColoniesCombinedDS48v2.npy")))
@@ -111,11 +111,11 @@ results = evaluate_spatial_classifier(model, hives, device="cuda")
 Regenerate the committed `figures/` (including the Figure 6 CSV) with
 
 ```bash
-uv run python -m smitheebe.make_figures --data <DS48v2.npy> --models-dir models --outdir figures_out
+uv run python -m combinator.make_figures --data <DS48v2.npy> --models-dir models --outdir figures_out
 ```
 
 and validate the committed `results/` directory (SHA-256 of every file) with
 
 ```bash
-uv run python -m smitheebe.results_io verify results
+uv run python -m combinator.results_io verify results
 ```

@@ -1,4 +1,4 @@
-"""smitheebe -- autoregressive masked-convolutional model of honeybee nest contents.
+"""combinator -- autoregressive masked-convolutional model of honeybee nest contents.
 
 Code and model weights for the masked-convolutional autoregressive model
 described in Marting et al., "Morphogenesis, differentiation, and robust

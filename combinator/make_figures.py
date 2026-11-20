@@ -2,11 +2,12 @@
 
 Usage (from the package root):
 
-    uv run python -m smitheebe.make_figures \
+    uv run python -m combinator.make_figures \
         --data AllColoniesCombinedDS48v2.npy \
         --models-dir models/ --outdir figures/
 
-This loads the committed ``smitheebe_v2`` checkpoints, evaluates them on the
+This loads the committed ``spatial_classifier_v2_*`` checkpoints
+(see ``combinator/registry.py``), evaluates them on the
 18-hive evaluation corpus (6 control + 6 physically shuffled + 6 simulated),
 and writes:
 

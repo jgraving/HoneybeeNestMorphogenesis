@@ -1,5 +1,5 @@
 [project]
-name = "smitheebe"
+name = "combinator"
 version = "0.1.0"
 description = "Autoregressive masked-convolutional model of honeybee nest contents (data + code for the Current Biology 2026 manuscript)."
 readme = "README.md"
@@ -28,7 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # Extra dependencies used by the two comb-content analysis notebooks that are
-# kept for completeness.  The autoregressive model itself (smitheebe/) needs
+# kept for completeness.  The autoregressive model itself (combinator/) needs
 # only the core dependencies above.
 analysis = [
     "opencv-python>=4.8",
@@ -54,7 +54,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["smitheebe"]
+packages = ["combinator"]
 
 [tool.ruff]
 line-length = 100

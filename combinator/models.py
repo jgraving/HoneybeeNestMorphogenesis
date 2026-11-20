@@ -326,7 +326,7 @@ def load_any(path, num_depth=20, num_height=52, num_width=104, device='cpu'):
     """Load a v2 checkpoint, inferring its configuration from its filename.
 
     ``path`` must be a ``spatial_classifier_v2_*`` filename (see
-    ``smitheebe/registry.py`` for the committed set).  The v1 ``global_k1``
+    ``combinator/registry.py`` for the committed set).  The v1 ``global_k1``
     and ``embedding_k<k>`` ablation checkpoints used different architectures
     and are deliberately not supported by this loader.
     """

@@ -8,11 +8,11 @@ representative outputs of the paper --
 * ``3d_predictions_likelihood.png``              (Figure 6B: 3D voxel view),
 * ``spatial_legend_subset.pdf``                   (Figure S: kernel legend)
 
--- can be regenerated from a results dict (see ``smitheebe.eval``).
+-- can be regenerated from a results dict (see ``combinator.eval``).
 
 ``results`` is a dict keyed by a model key ``(kernel, d, h, w, pos, ctx,
 int)`` whose values are the per-model output of
-``smitheebe.eval.evaluate_spatial_classifier``.
+``combinator.eval.evaluate_spatial_classifier``.
 """
 
 from __future__ import annotations
