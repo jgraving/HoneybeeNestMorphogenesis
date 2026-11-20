@@ -1,0 +1,215 @@
+# Honeybee Nest Morphogenesis — data and code
+
+Code and model weights for the honeybee nest content study in
+
+> **Marting PR, Graving JM, et al.** *Morphogenesis, differentiation, and
+> robust multi-scale organization of the honeybee nest revealed by a novel 4D
+> atlas.* **Current Biology** 36, in press (2026).
+> DOI: [10.1016/j.cub.2026.10.064](https://doi.org/10.1016/j.cub.2026.10.064)
+
+This repository contains
+
+* **`smitheebe/`** — a Python package porting the autoregressive
+  masked-convolutional model and its data pipeline (training, evaluation,
+  and figure generation) from the original analysis notebooks.
+* **`models/`** — the eight fitted paper model checkpoints
+  (k=3 across all 7 one/two/three-axis configurations, plus the spatial
+  null-model baseline, ≈62 MB total) with per-file provenance in
+  [`models/MANIFEST.md`](models/MANIFEST.md).
+* **`results/`** — the full per-hive, per-voxel outputs of those eight models
+  (ground truth, predictions, entropy and log-likelihood for all 18 hives:
+  6 control, 6 physically-shuffled, 6 simulated; ≈400 MB in 145 small files)
+  with a `manifest.json` of SHA-256 checksums.
+* **`figures/`** — the model outputs of the paper (Figure 6 likelihood
+  comparison, Figure 6B 3D visualization, kernel legend) plus the compact
+  CSV of the mean-likelihood values behind Figure 6, all regenerated from the
+  committed weights.
+* **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — the
+  comb-content analysis notebooks (consumes the deposited `CombMasks_*.npy`
+  and `df_*.csv` files in the repository root).
+* **`autoregressive_model.ipynb`** — an interactive walkthrough of the
+  autoregressive model using the package.
+
+---
+
+## Installation
+
+The environment is managed with [uv](https://github.com/astral-sh/uv)
+(Python ≥ 3.11, e.g. the Python 3.12.3 used in the paper):
+
+```bash
+uv sync --all-extras     # core + comb-content notebook dependencies
+# or, for just the model package (no OpenCV/landstats extras):
+uv sync
+```
+
+`uv sync` reads `pyproject.toml` and [the lock file `uv.lock`](uv.lock), so
+the paper's pins are reproduced exactly (e.g. `pytorch-lightning==2.5.0`).
+On a machine with a CUDA GPU, install a CUDA-enabled PyTorch first
+(or add it to the project) so training/evaluation can use the GPU:
+
+```bash
+uv sync --all-extras
+uv pip install "torch>=2.0+cu124" --index-url https://download.pytorch.org/whl/cu124
+```
+
+`uv run python` (or activate `.venv`) from the repository root is all that
+is needed to use the package; it is installed editable by `uv sync`.
+
+## Quick start
+
+All of the following runs on CPU; add `CUDA_VISIBLE_DEVICES=<n>` to use a
+GPU (selecting the device with `torch.cuda.device_count()`-style indexing,
+e.g. run with `CUDA_VISIBLE_DEVICES=1` to pin a specific card).
+
+```python
+import numpy as np
+from smitheebe import load_grids, map_all_labels, process_grids, build_eval_hives
+from smitheebe import evaluate_spatial_classifier
+from smitheebe.models import load_any
+
+# 1) Load the detailed 21-class masks and run the paper's spatial pipeline
+#    (class remap -> phase-correlation alignment to a global mean wood
+#    template -> mean-wood bounding-box crop -> (20, 52, 104) grids of the
+#    6 simplified classes).
+grids = load_grids("path/to/AllColoniesCombinedDS48v2.npy")   # per-colony stack
+grids = map_all_labels(grids)
+grids = process_grids(grids)            # takes ~30 s on CPU
+
+# 2) Build the 18-hive evaluation corpus: 6 control + 6 physically
+#    shuffled + 6 simulated (frame-pair-shuffled) hives.
+hives = build_eval_hives(grids, num_control=6)
+
+# 3) Load a paper model (filename encodes its architecture) and evaluate it.
+model = load_any("models/spatial_classifier_v2_k3_dTrue_hTrue_wTrue_posTrue_ctxTrue_int1.pth")
+results = evaluate_spatial_classifier(model, hives, device="cpu")
+print(results["hives"][0]["predictions"][0].argmax())  # ...
+```
+
+Regenerate the committed figures and CSV from the committed weights:
+
+```bash
+uv run python -m smitheebe.make_figures \
+    --data path/to/AllColoniesCombinedDS48v2.npy \
+    --models-dir models --outdir figures_out
+CUDA_VISIBLE_DEVICES=1 uv run python -m smitheebe.make_figures \
+    --data ... --device cuda:0   # GPU
+```
+
+Reconstruct the committed `results/` directory into a plain dict in memory
+(with SHA-256 verification):
+
+```python
+from smitheebe.results_io import load_results
+results = load_results("results")   # {config_tuple: {"hives": [...]}}
+```
+
+Validate an unpacked `results/` copy at any time:
+
+```bash
+uv run python -m smitheebe.results_io verify results
+```
+
+## Data and provenance
+
+The model is trained and evaluated on the **detailed** per-colony grids.
+These are produced by the comb-image segmentation pipeline and (in their
+raw, un-aligned form) are several gigabytes, so they are **not** committed
+here.
+
+| File | Shape per colony (weeks×D×H×W) | Classes | Where | Purpose |
+|---|---|---|---|---|
+| `AllColoniesCombinedDS48v2.npy` | (weeks, 20, 77, 116) | detailed (0–19, 255) | **local only** — request from the first author | **model** input; the 21-class DS48v2 masks (12 colonies, 228 weeks). Remapped to 6 classes, aligned, and cropped by the pipeline to (weeks, 20, 52, 104) |
+| `CombMasks_Contents_aligned.npy` | (weeks, 20, 52, 100) | 0–10 | in this repo | deposited; comb-**content** masks (already aligned) |
+| `CombMasks_CombTypes_aligned.npy` | (weeks, 20, 52, 100) | 0–5 | in this repo | deposited; comb-**type** labels (already aligned) |
+| `CombMasks_Combined_aligned.npy` | (weeks, 20, 52, 100) | 0–19 | in this repo | deposited; content + type combined (already aligned) |
+| `CombMasks_Contents_simple.npy` | (weeks, 20, 77, 116) | 0–4, 255 | in this repo | deposited; simplified content masks, unaligned |
+| `CombMasks_Contents_crop.npy` | (weeks, 20, 42, 88) | 0–10 | in this repo | deposited; content masks, a tighter crop |
+| `df_*.csv` | — | — | in this repo | per-cell / per-colony statistics derived from the masks, consumed by `CombContent_Analysis.ipynb` |
+| `models/*.pth` | — | — | in this repo | eight fitted checkpoints (see [`models/MANIFEST.md`](models/MANIFEST.md)) |
+| `results/*.npz` | — | — | in this repo | per-hive model outputs (see `results/manifest.json`) |
+
+The two families should not be conflated: the **model** works on the
+detailed DS48v2 masks (local). The **deposited** `CombMasks_*.npy` and
+`df_*.csv` are the products of the comb-content analysis (`*_aligned` are
+already aligned to a 52×100 bounding box; `*_simple`/`*_crop` are the
+pre-alignment forms) and are the inputs to the two comb-content notebooks.
+They carry different class taxonomies and are not the model's training input.
+
+### Note on grid geometry
+
+The positional-embedding weights of the committed checkpoints fix the model
+input geometry to **(depth, height, width) = (20, 52, 104)**: 20 = 10
+combined frame-sides (Side A + Side B of each of the 10 frames, stored
+interleaved), and 52 × 104 is the mean-wood bounding-box crop (margin 1,
+threshold 0.5) of the aligned 77 × 116 comb image — exactly what
+`smitheebe.preprocessing.process_grids` computes. The weights (e.g. the
+`positional_embedding` shape `(1, 128, 20, 52, 104)`) are authoritative and
+the code matches them exactly; loading is strict (`weights_only=True`,
+`load_state_dict` strict).
+
+## Model
+
+`SpatialClassifier` (see `smitheebe/models.py` and the first-author
+notebook it ports) is a per-voxel autoregressive content classifier:
+
+* **Class embedding**: a learned (classes × 128) table maps each voxel's
+  integer label to a 128-d vector; a per-class bias is added.
+* **Center-masked conv**: a single linear convolution with kernel
+  (k, k, k), with `k` = 3 on *included* axes and 1 on excluded axes, whose
+  center voxel is hard-zeroed so the true label never appears in the input.
+* **Positional bias**: a learnable (1, 128, D', H', W') field, full size on
+  included axes and 1 on excluded axes, broadcast over the grid.
+* **First-order interaction**: a learned "context × position" term — two
+  1×1×1 pointwise convolutions produce two feature vectors that are
+  multiplied element-wise and added back to `context + position`
+  (i.e. `output = context + position + context2 + (context * position)`).
+* **Tied head**: logits = `output @ class_embedding.T`, softmaxed to a
+  distribution over the 6 classes.
+
+Training (paper, section "Masked-convolutional autoregressive model"):
+AdamW (base lr 1e-3, weight decay 1e-5, betas (0.9, 0.95)); the class
+embedding and positional-bias groups run at 10× the base lr; a 5-epoch
+linear warmup then cosine annealing, 200 epochs total; batch size 8;
+class-weighted cross-entropy with inverse-frequency weights.
+
+### The 8 committed checkpoints
+
+| File (see `models/` for full names) | Role in the paper |
+|---|---|
+| `..._v2_k1_..._int0` | Spatial null model (k=1, no axes) — the "no context" baseline (dashed line) |
+| 3 × 1D: w, h, d | Receptive field on a single axis |
+| 3 × 2D: d+h, d+w, h+w | Two axes |
+| 1 × 3D: d+h+w | Full 3-D context — the main model |
+
+Figure 6 averages the 1-D and 2-D configurations separately and shows the
+3-D model and the k=1 baseline; the individual per-configuration means
+appear in **`figures/mean_likelihood_figure6.csv`** (and in Figure S11 of
+the paper).
+
+## What "shuffling" means
+
+* **Control (shuffled = "no")**: the 6 `DD*` colonies, frames in natural
+  order.
+* **Treatment (shuffled = "physical")**: the 6 `SH*` colonies, whose frames
+  were physically moved within the hive during the experiment.
+* **Simulated**: `DD1`…`DD6` with the ten frame-pairs (A+B) along the
+  depth axis randomly permuted, breaking global depth order while
+  keeping each pair of a frame together. Built with
+  `build_eval_hives(..., seed=42)`, deterministic.
+
+## Reproducibility checklist
+
+* `pyproject.toml` / `uv.lock` pin the software stack (Python ≥ 3.11;
+  e.g. `pytorch-lightning==2.5.0`, the version used in the paper).
+* `models/MANIFEST.md` lists the hyper-parameters and training seed context
+  of each committed checkpoint.
+* `results/manifest.json` lists every result file with its SHA-256, so a
+  downloaded copy can be validated byte-for-byte.
+* `make_figures.py` reproduces `figures/` from the committed weights plus
+  the data, and `autoregressive_model.ipynb` walks through it cell by cell.
+
+## License
+
+MIT (see `LICENSE`). Code and weights; data files retain their original
+provenance and sharing terms (see the table above).
