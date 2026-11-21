@@ -46,7 +46,7 @@ def _spatial_groups():
 
 def plot_likelihood_with_bootstrap(results, model_keys, num_classes, class_names,
                                    n_bootstrap=1000, ci=95, ax=None, title="",
-                                   hive_slice=None):
+                                   hive_slice=None, random_state=42):
     """Average the mean-likelihood over all 1D/2D/3D configurations (kernel 3)
     and bootstrap 95% CIs across colonies/weeks, with a global (k=1, no-spatial)
     baseline line.  With ``hive_slice``, only hives in that slice are used
@@ -58,6 +58,7 @@ def plot_likelihood_with_bootstrap(results, model_keys, num_classes, class_names
     """
     class_colors = sns.color_palette("colorblind", num_classes)
     class_markers = ['o', 's', '^', 'D', 'v', '*']
+    rng = np.random.default_rng(random_state)  # seeded: reproducible CIs
 
     spatial_groups = _spatial_groups()
     x_labels = list(spatial_groups.keys())
@@ -117,9 +118,9 @@ def plot_likelihood_with_bootstrap(results, model_keys, num_classes, class_names
                 if not cls_samples[cls]:
                     samples.append(np.nan)
                     continue
-                sample_vals = np.random.choice(cls_samples[cls],
-                                               size=len(cls_samples[cls]),
-                                               replace=True)
+                sample_vals = rng.choice(cls_samples[cls],
+                                         size=len(cls_samples[cls]),
+                                         replace=True)
                 samples.append(np.mean(sample_vals))
             samples = [s for s in samples if not np.isnan(s)]
             if samples:
@@ -156,7 +157,8 @@ def plot_likelihood_with_bootstrap(results, model_keys, num_classes, class_names
 
 
 def plot_control_physical_simulated(results, model_keys, num_classes, class_names,
-                                    n_bootstrap=1000, ci=95, out="control_physical_simulated_likelihood.pdf"):
+                                     n_bootstrap=1000, ci=95, random_state=42,
+                                     out="control_physical_simulated_likelihood.pdf"):
     """Figure 6: three panels -- control (unshuffled), physically shuffled
     treatment, and simulated (manually) shuffled.  Hive blocks in ``results``
     must be ordered [control(6), physical(6), manual(6)].  Each panel calls
@@ -173,7 +175,8 @@ def plot_control_physical_simulated(results, model_keys, num_classes, class_name
         plot_likelihood_with_bootstrap(results, model_keys, num_classes,
                                        class_names, ax=ax, title=title,
                                        n_bootstrap=n_bootstrap, ci=ci,
-                                       hive_slice=hive_slice)
+                                       hive_slice=hive_slice,
+                                       random_state=random_state)
 
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc='upper center', ncol=len(labels),
@@ -317,6 +320,73 @@ def plot_masked_kernel(ax, dims):
     ax.set_zlim(0, 7)
     ax.set_box_aspect([1, 1, 1])
     ax.axis("off")
+
+
+def mean_class_likelihood(hives, cls):
+    """Figure-6 metric for a hive group: mean, over weeks (and hives), of the
+    model's predicted probability of class ``cls`` at voxels whose ground-truth
+    label is ``cls``.  The ``.reshape(-1)`` is required before boolean
+    indexing."""
+    vals = []
+    for hive in hives:
+        gt = hive["ground_truth"]
+        probs = np.exp(hive["log_likelihood"])
+        for t in range(gt.shape[0]):
+            m = gt[t].reshape(-1) == cls
+            if m.any():
+                vals.append(float(probs[t].reshape(-1)[m].mean()))
+    return float(np.mean(vals)) if vals else float("nan")
+
+
+CONFIG_ORDER = [(True, False, False), (False, True, False), (False, False, True),
+                (True, True, False), (True, False, True), (False, True, True),
+                (True, True, True)]
+CONFIG_LABELS = ["depth", "height", "width",
+                 "depth x height", "depth x width", "height x width",
+                 "depth x height x width"]
+
+
+def plot_config_landscape(results, model_keys, class_names,
+                          out="supplement_config_likelihood.pdf"):
+    """Supplemental figure: mean likelihood of *each individual* 1D/2D/3D
+    configuration (k=3), instead of the dimension-averaged values of Figure 6.
+    One panel per class; x-axis = the seven spatial-axis configurations;
+    solid lines = control / treatment / simulated groups, dashed lines of the
+    same color = the k=1 (no spatial context) baseline.  Hive blocks in
+    ``results`` must be ordered [control(6), physical(6), simulated(6)]."""
+    groups = {"control": slice(0, 6), "treatment": slice(6, 12),
+              "simulated": slice(12, 18)}
+    keys = {(k[1], k[2], k[3]): k for k in model_keys if k[0] == 3}
+    baseline_key = next(k for k in model_keys
+                        if k[0] == 1 and k[1:4] == (False, False, False))
+
+    gcolors = dict(zip(groups, sns.color_palette("colorblind", 3)))
+    gmarkers = {"control": "o", "treatment": "s", "simulated": "^"}
+
+    fig, axes = plt.subplots(2, 3, figsize=(13, 6), dpi=300)
+    x = np.arange(len(CONFIG_ORDER))
+    for cls, ax in enumerate(axes.ravel()):
+        for gname, sl in groups.items():
+            vals = [mean_class_likelihood(results[keys[dhw]]["hives"][sl], cls)
+                    for dhw in CONFIG_ORDER]
+            base = [mean_class_likelihood(results[baseline_key]["hives"][sl], cls)] * len(vals)
+            ax.plot(x, base, color=gcolors[gname], ls="--", lw=1.0, alpha=0.55)
+            ax.plot(x, vals, color=gcolors[gname], marker=gmarkers[gname], lw=1.5)
+        ax.set_title(class_names[cls], fontsize=10)
+        ax.set_xticks(x)
+        ax.set_xticklabels(CONFIG_LABELS, rotation=35, ha="right", fontsize=7)
+        ax.set_ylim(-0.05, 1.05)
+        ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
+    axes[0, 0].set_ylabel("Likelihood")
+    handles = [plt.Line2D([], [], color=gcolors[g], lw=1.5, marker=gmarkers[g],
+                          label=f"{g} (k=3)") for g in groups]
+    handles.append(plt.Line2D([], [], color="0.4", ls="--", label="baseline (k=1)"))
+    fig.legend(handles=handles, loc="upper center", ncol=4, fontsize=9,
+               bbox_to_anchor=(0.5, 1.10))
+    plt.tight_layout()
+    plt.savefig(out, bbox_inches="tight")
+    plt.close(fig)
+    return out
 
 
 def plot_kernel_legend_subset(out="spatial_legend_subset.pdf"):

@@ -53,7 +53,19 @@ def compute_class_weights(dataset: GridDataset, normalize: bool = True) -> torch
 
 
 def load_grids(path: str) -> list[np.ndarray]:
-    """Load a deposited/combined ``.npy`` of a (ragged) per-colony stack and
-    return it as a Python list of arrays."""
-    arr = np.load(path, allow_pickle=True)
+    """Load a deposited/combined ``.npy`` (or a ``.zip`` containing a single
+    ``.npy``; the 156 MB raw file is too large for GitHub's 100 MB/file cap,
+    so it is committed zipped under ``data/``) of a (ragged) per-colony
+    stack and return it as a Python list of arrays."""
+    if str(path).endswith(".zip"):
+        import io
+        import zipfile
+
+        with zipfile.ZipFile(path) as zf:
+            names = [n for n in zf.namelist() if n.endswith(".npy")]
+            if len(names) != 1:
+                raise ValueError(f"expected a single .npy in {path!r}, got {names}")
+            arr = np.load(io.BytesIO(zf.read(names[0])), allow_pickle=True)
+    else:
+        arr = np.load(path, allow_pickle=True)
     return [arr[i] for i in range(len(arr))]

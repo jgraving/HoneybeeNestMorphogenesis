@@ -15,6 +15,9 @@ and writes:
 * ``3d_predictions_likelihood.png``               (Figure 6B)
 * ``spatial_legend_subset.pdf``                   (kernel legend, Figure S)
 * ``mean_likelihood_figure6.csv``                  (the numbers behind Fig. 6)
+* ``supplement_config_likelihood.pdf``            (per-configuration figure,
+    the supplement's individual 1D/2D/3D context configurations)
+* ``mean_likelihood_per_config.csv``               (numbers behind that figure)
 
 The full per-hive, per-voxel ``results`` dict is large (~640 MB) and is NOT
 written to disk; use ``--save-results PATH`` (e.g. an NPZ) if you need it.
@@ -66,7 +69,7 @@ def make_figures(results, outdir, hive_idx=4, week=10):
 
     pdf = plotting.plot_control_physical_simulated(
         results, model_keys, num_classes=6, class_names=plotting.DEFAULT_NAMES,
-        n_bootstrap=1000, ci=95,
+        n_bootstrap=1000, ci=95, random_state=42,
         out=os.path.join(outdir, "control_physical_simulated_likelihood.pdf"))
     print(f"  wrote {pdf}")
 
@@ -83,6 +86,11 @@ def make_figures(results, outdir, hive_idx=4, week=10):
     legend = plotting.plot_kernel_legend_subset(
         out=os.path.join(outdir, "spatial_legend_subset.pdf"))
     print(f"  wrote {legend}")
+
+    config_pdf = plotting.plot_config_landscape(
+        results, model_keys, plotting.DEFAULT_NAMES,
+        out=os.path.join(outdir, "supplement_config_likelihood.pdf"))
+    print(f"  wrote {config_pdf}")
 
 
 def make_figures_cli() -> None:
@@ -121,6 +129,9 @@ def make_figures_cli() -> None:
 
     # Compact per-class mean-likelihood table (the Figure-6 numbers).
     _write_figure6_csv(results, args.outdir)
+
+    # Per-configuration table (the supplemental-figure numbers).
+    _write_per_config_csv(results, args.outdir)
 
 
 def _write_figure6_csv(results, outdir):
@@ -181,6 +192,43 @@ def _write_figure6_csv(results, outdir):
                       [f"{baseline[p][cls]:.4f}" for p in path_names]
                 w.writerow(row)
     print(f"  wrote {os.path.join(outdir, 'mean_likelihood_figure6.csv')}")
+
+
+def _write_per_config_csv(results, outdir):
+    """Write mean_likelihood_per_config.csv: the Figure-6 metric for each
+    *individual* k=3 configuration (rows = class x configuration), by hive
+    group, plus the k=1 baseline.  These are the numbers behind the
+    supplemental per-configuration figure."""
+    import csv
+
+    from .plotting import CONFIG_LABELS, CONFIG_ORDER, mean_class_likelihood
+
+    class_names = plotting.DEFAULT_NAMES
+    path_slices = {"control": slice(0, 6), "treatment": slice(6, 12),
+                   "simulated": slice(12, 18)}
+    keys = {(k[1], k[2], k[3]): k for k in results if k[0] == 3}
+    baseline_key = next(k for k in results
+                        if k[0] == 1 and k[1:4] == (False, False, False))
+    baseline = {
+        name: {cls: mean_class_likelihood(results[baseline_key]["hives"][sl], cls)
+               for cls in range(len(class_names))}
+        for name, sl in path_slices.items()
+    }
+
+    with open(os.path.join(outdir, "mean_likelihood_per_config.csv"), "w",
+              newline="") as f:
+        w = csv.writer(f)
+        header = ["configuration", "class"] + list(path_slices) + \
+                 [f"baseline_{p}" for p in path_slices]
+        w.writerow(header)
+        for dhw, label in zip(CONFIG_ORDER, CONFIG_LABELS):
+            for cls, cname in enumerate(class_names):
+                row = [label, cname] + [
+                    f"{mean_class_likelihood(results[keys[dhw]]['hives'][sl], cls):.4f}"
+                    for _n, sl in path_slices.items()
+                ] + [f"{baseline[p][cls]:.4f}" for p in path_slices]
+                w.writerow(row)
+    print(f"  wrote {os.path.join(outdir, 'mean_likelihood_per_config.csv')}")
 
 
 def _save_results(results, path):

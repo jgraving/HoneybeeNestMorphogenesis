@@ -16,14 +16,18 @@ This repository contains
   (k=3 across all 7 one/two/three-axis configurations, plus the spatial
   null-model baseline, ≈62 MB total) with per-file provenance in
   [`models/MANIFEST.md`](models/MANIFEST.md).
+* **`data/`** — the model's detailed 21-class colony array
+  (`AllColoniesCombinedDS48v2.zip`, ~3.6 MB; zipped because the raw 156 MB
+  `.npy` exceeds GitHub's 100 MB/file cap).
 * **`results/`** — the full per-hive, per-voxel outputs of those eight models
   (ground truth, predictions, entropy and log-likelihood for all 18 hives:
   6 control, 6 physically-shuffled, 6 simulated; ≈400 MB in 145 small files)
   with a `manifest.json` of SHA-256 checksums.
 * **`figures/`** — the model outputs of the paper (Figure 6 likelihood
-  comparison, Figure 6B 3D visualization, kernel legend) plus the compact
-  CSV of the mean-likelihood values behind Figure 6, all regenerated from the
-  committed weights.
+  comparison, Figure 6B 3D visualization, kernel legend, and the supplemental
+  per-configuration figure of all individual 1D/2D/3D contexts) plus the CSVs
+  of the mean-likelihood values behind the averaged and per-configuration
+  figures, all regenerated from the committed weights.
 * **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — the
   comb-content analysis notebooks (consumes the deposited `CombMasks_*.npy`
   and `df_*.csv` files in the repository root).
@@ -72,7 +76,7 @@ from combinator.models import load_any
 #    (class remap -> phase-correlation alignment to a global mean wood
 #    template -> mean-wood bounding-box crop -> (20, 52, 104) grids of the
 #    6 simplified classes).
-grids = load_grids("path/to/AllColoniesCombinedDS48v2.npy")   # per-colony stack
+grids = load_grids("data/AllColoniesCombinedDS48v2.zip")      # per-colony stack (zipped .npy)
 grids = map_all_labels(grids)
 grids = process_grids(grids)            # takes ~30 s on CPU
 
@@ -90,7 +94,7 @@ Regenerate the committed figures and CSV from the committed weights:
 
 ```bash
 uv run python -m combinator.make_figures \
-    --data path/to/AllColoniesCombinedDS48v2.npy \
+    --data data/AllColoniesCombinedDS48v2.zip \
     --models-dir models --outdir figures_out
 CUDA_VISIBLE_DEVICES=1 uv run python -m combinator.make_figures \
     --data ... --device cuda:0   # GPU
@@ -114,12 +118,14 @@ uv run python -m combinator.results_io verify results
 
 The model is trained and evaluated on the **detailed** per-colony grids.
 These are produced by the comb-image segmentation pipeline and (in their
-raw, un-aligned form) are several gigabytes, so they are **not** committed
-here.
+raw, un-aligned form) are large, so the model input is committed **zipped**
+under [`data/`](data/) — `zip -9` reduces the 156 MB `.npy` to ~3.6 MB.
+`load_grids()` accepts a `.zip` containing a single `.npy` directly, so no
+download or unzip step is needed.
 
 | File | Shape per colony (weeks×D×H×W) | Classes | Where | Purpose |
 |---|---|---|---|---|
-| `AllColoniesCombinedDS48v2.npy` | (weeks, 20, 77, 116) | detailed (0–19, 255) | **local only** — request from the first author | **model** input; the 21-class DS48v2 masks (12 colonies, 228 weeks). Remapped to 6 classes, aligned, and cropped by the pipeline to (weeks, 20, 52, 104) |
+| `AllColoniesCombinedDS48v2.npy` (zipped) | (weeks, 20, 77, 116) | detailed (0–19, 255) | in this repo, as `data/AllColoniesCombinedDS48v2.zip` | **model** input; the 21-class DS48v2 masks (12 colonies, 228 weeks). Remapped to 6 classes, aligned, and cropped by the pipeline to (weeks, 20, 52, 104). The raw file is 156 MB (over GitHub's 100 MB/file cap), so it is committed zipped; `load_grids()` reads the zip directly |
 | `CombMasks_Contents_aligned.npy` | (weeks, 20, 52, 100) | 0–10 | in this repo | deposited; comb-**content** masks (already aligned) |
 | `CombMasks_CombTypes_aligned.npy` | (weeks, 20, 52, 100) | 0–5 | in this repo | deposited; comb-**type** labels (already aligned) |
 | `CombMasks_Combined_aligned.npy` | (weeks, 20, 52, 100) | 0–19 | in this repo | deposited; content + type combined (already aligned) |
@@ -183,9 +189,11 @@ class-weighted cross-entropy with inverse-frequency weights.
 | 1 × 3D: d+h+w | Full 3-D context — the main model |
 
 Figure 6 averages the 1-D and 2-D configurations separately and shows the
-3-D model and the k=1 baseline; the individual per-configuration means
-appear in **`figures/mean_likelihood_figure6.csv`** (and in Figure S11 of
-the paper).
+3-D model and the k=1 baseline. The per-configuration values behind Figure 6
+are in **`figures/mean_likelihood_per_config.csv`**, plotted in
+**`figures/supplement_config_likelihood.pdf`** (the paper reports them in its
+supplement); **`figures/mean_likelihood_figure6.csv`** holds the
+dimension-averaged Figure-6 numbers.
 
 ## What "shuffling" means
 

@@ -101,7 +101,7 @@ from combinator.models import load_any
 from combinator import evaluate_spatial_classifier, build_eval_hives, \
     load_grids, map_all_labels, process_grids
 
-grids = process_grids(map_all_labels(load_grids("AllColoniesCombinedDS48v2.npy")))
+grids = process_grids(map_all_labels(load_grids("data/AllColoniesCombinedDS48v2.zip")))
 hives = build_eval_hives(grids, num_control=6)
 
 model = load_any("spatial_classifier_v2_k3_dTrue_hTrue_wTrue_posTrue_ctxTrue_int1.pth")
@@ -111,7 +111,7 @@ results = evaluate_spatial_classifier(model, hives, device="cuda")
 Regenerate the committed `figures/` (including the Figure 6 CSV) with
 
 ```bash
-uv run python -m combinator.make_figures --data <DS48v2.npy> --models-dir models --outdir figures_out
+uv run python -m combinator.make_figures --data data/AllColoniesCombinedDS48v2.zip --models-dir models --outdir figures_out
 ```
 
 and validate the committed `results/` directory (SHA-256 of every file) with
