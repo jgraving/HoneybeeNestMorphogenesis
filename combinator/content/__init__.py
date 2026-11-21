@@ -9,7 +9,7 @@ figure group adds the figure functions.
 """
 
 from . import (celllevel, comblevel, constants, data, nestlevel,
-              seasonality, specialization, util)
+              seasonality, shuffled, specialization, util)
 from .constants import *  # noqa: F401,F403
 from .data import load_masks, load_tables, px_to_cm
 
@@ -21,4 +21,5 @@ __all__ = [
     "comblevel",
     "nestlevel",
     "specialization",
+    "shuffled",
 ]
