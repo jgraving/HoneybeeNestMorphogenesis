@@ -321,7 +321,7 @@ def plot_model_scatter3d_simplified(results, model_keys, model_idx=0, hive_idx=0
                 axis._axinfo["grid"]['color'] = (1, 1, 1, 0)
             if "pane" in axis._axinfo:
                 axis._axinfo["pane"]['edgecolor'] = 'black'
-    fig.axes[0].set_ylabel("Depth (Back -> Front)", fontsize=8)
+    fig.axes[0].set_ylabel("Depth (Back \u2192 Front)", fontsize=8)
 
     class_labels = ['Wood', 'Empty\nComb', 'Brood', 'Pollen', 'Nectar/\nHoney']
     class_colors = class_palette[1:6]
