@@ -28,9 +28,19 @@ This repository contains
   per-configuration figure of all individual 1D/2D/3D contexts) plus the CSVs
   of the mean-likelihood values behind the averaged and per-configuration
   figures, all regenerated from the committed weights.
-* **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — the
-  comb-content analysis notebooks (consumes the deposited `CombMasks_*.npy`
-  and `df_*.csv` files in the repository root).
+* **`combinator/content/`** — the comb-content **analysis** package
+  (Figures 1–5): seasonality, cell/comb/nest-level organization,
+  specialization, and shuffled-vs-control comparisons, ported module-by-module
+  from the first author's notebooks with every paper number reproduced
+  (see [`RESULTS.md`](RESULTS.md)).
+* **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — thin
+  baked wrappers demonstrating the analysis package with all figures inline
+  (consumes the deposited `CombMasks_*.npy` and `df_*.csv` files in the
+  repository root; the original monolithic notebooks are in the git history).
+* **`tests/`** — a pytest suite that re-derives **every number the paper
+  text quotes for Figures 1–5** and fails if any drifts.
+* **`figures/analysis/`** — vector PDFs of every reproducible paper panel
+  (Figures 1–5), regenerated from the committed tables.
 * **`autoregressive_model.ipynb`** — the model notebook, driven entirely by
   the `combinator` package: load/relabel, align, crop, a 2-epoch training
   smoke test (plus the full `train_all_v2` reproduction call behind a flag —
@@ -163,6 +173,29 @@ threshold 0.5) of the aligned 77 × 116 comb image — exactly what
 the code matches them exactly; loading is strict (`weights_only=True`,
 `load_state_dict` strict).
 
+## Analysis pipeline — Figures 1–5 (`combinator.content`)
+
+The observational half of the paper (Figures 1–5: seasonality, cell
+aggregation, comb/nest organization, specialization, and the shuffling
+experiment) runs through `combinator.content`, one module per figure
+group (`seasonality`, `celllevel`, `comblevel`, `nestlevel`,
+`specialization`, `shuffled`), plus `make.py` — the ported generators
+for the derived tables (`df_cellneib`, `df_cellfuture`,
+`df_nearestdist*`).
+
+```bash
+uv run python -m combinator.make_analysis_figures   # figures/analysis/*.pdf
+uv run python -m combinator.make_content_tables     # regenerate derived tables
+uv run pytest -q                                    # every paper number, asserted
+```
+
+[`RESULTS.md`](RESULTS.md) maps each panel to its code, tabulates every
+validated paper number against its recomputation, and lists — with
+evidence — the parts of the analysis that the released data cannot
+reproduce (the segmentation network behind Figure 1B, a few offline
+statistics, and the landscape table behind the nest-level tables).  CI
+(`.github/workflows/tests.yml`) runs the fast suite on every push.
+
 ## Model
 
 `SpatialClassifier` (see `combinator/models.py` and the first-author
@@ -229,6 +262,13 @@ dimension-averaged Figure-6 numbers.
   --models-dir models --outdir figures` reproduces `figures/` from the
   committed weights plus the data, and `autoregressive_model.ipynb` walks
   through the same pipeline as the package API, cell by cell.
+* `python -m combinator.make_analysis_figures` reproduces every
+  reproducible panel of Figures 1–5 into `figures/analysis/`, and
+  `python -m combinator.make_content_tables` regenerates the derived
+  analysis tables from the comb masks (regeneration fidelity and the
+  non-regenerable parts: [`RESULTS.md`](RESULTS.md)).
+* `pytest` asserts all paper numbers of Figures 1–5; `.github/workflows/
+  tests.yml` runs lint + tests on every push.
 
 ## License
 

@@ -17,7 +17,8 @@ These are the *slow, canonical* inputs to the analysis modules: tests
 and CI use the committed CSVs; regenerating them exactly reproduces the
 committed tables where the pipeline is deterministic (the neighbour and
 future-self tables) or seeded (``nearest_neighbour_table``, ``np.random.
-seed(42)``).
+seed(42)``); the float columns agree to within ~1e-14 relative rounding
+(the committed CSVs were rounded on a different build).
 """
 
 from __future__ import annotations
@@ -211,7 +212,10 @@ def nearest_neighbour_table(ContentsCrop: np.ndarray, thres: int = 10,
         np.random.seed(seed)
     side = 'a'
     appended = []
-    for c in range(12):
+    # NOTE(original): the notebook hardcoded range(12) colonies; iterating
+    # len(ContentsCrop) is identical for the full 12-colony array and
+    # permits subset regeneration for validation.
+    for c in range(len(ContentsCrop)):
         for w in range(len(ContentsCrop[c])):
             for f in range(20):
                 mask = ContentsCrop[c][w][f]
