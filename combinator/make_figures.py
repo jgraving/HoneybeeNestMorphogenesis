@@ -107,9 +107,16 @@ def make_figures_cli() -> None:
                          "CUDA_VISIBLE_DEVICES, e.g. CUDA_VISIBLE_DEVICES=1)")
     ap.add_argument("--hive-idx", type=int, default=4)
     ap.add_argument("--week", type=int, default=10)
+    ap.add_argument("--palette", default="paper",
+                    choices=plotting.CLASS_PALETTE_MODES,
+                    help="'paper' (default): the published model-figure colors "
+                         "(seaborn 'colorblind', wood in red); 'seaborn': the "
+                         "default seaborn 'colorblind' palette; 'content': the "
+                         "nest-content palette of Figures 1-5")
     ap.add_argument("--save-results", default=None,
                     help="optional path (torch .pt) to save the full results dict")
     args = ap.parse_args()
+    plotting.set_class_palette_mode(args.palette)
 
     print(f"Loading data {args.data} ...")
     grids = load_grids(args.data)

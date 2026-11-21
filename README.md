@@ -95,7 +95,11 @@ results = evaluate_spatial_classifier(model, hives, device="cpu")
 print(results["hives"][0]["predictions"][0].argmax())  # ...
 ```
 
-Regenerate the committed figures and CSV from the committed weights:
+Reproduce the committed figures and CSV from the committed weights
+(default palette: the published model-figure colors — seaborn
+"colorblind" with the wood class in red; `--palette seaborn` uses the
+untouched seaborn palette, `--palette content` the nest-content palette
+of Figures 1–5):
 
 ```bash
 uv run python -m combinator.make_figures \

@@ -34,6 +34,46 @@ SIMPLE_NAMES = ['background', 'wood', 'empty_comb', 'any_brood', 'pollen',
 DEFAULT_NAMES = ["Background", "Wood", "Empty Comb", "Brood", "Pollen",
                  "Nectar/Honey"]
 
+#: The published model-figure palette: seaborn "colorblind" with the wood
+#: class recolored to the same red the nest-content figures use (#a62040).
+WOOD_RED = '#a62040'
+
+#: The nest-content palette used by Figures 1-5 (wood red, brood teal,
+#: pollen green, nectar/honey blue; values from
+#: ``combinator.content.constants``), available for the model figures via
+#: ``--palette content``.
+CONTENT_CLASS_COLORS = ['#000000', WOOD_RED, '#404080', '#1f998a',
+                        '#67cc5c', '#34618d']
+
+#: Available model-figure palettes; see :func:`set_class_palette_mode`.
+CLASS_PALETTE_MODES = ("paper", "seaborn", "content")
+_CLASS_PALETTE_MODE = "paper"
+
+
+def set_class_palette_mode(mode: str = "paper") -> None:
+    """Select the model-figure palette.
+
+    ``"paper"`` (default) is the published model-figure look: seaborn
+    "colorblind" with the wood class in red ``#a62040``.  ``"seaborn"``
+    uses the default seaborn "colorblind" palette unchanged.
+    ``"content"`` uses the nest-content palette shared with Figures 1-5.
+    Likelihood maps are viridis in all modes.
+    """
+    if mode not in CLASS_PALETTE_MODES:
+        raise ValueError(f"palette mode must be one of {CLASS_PALETTE_MODES}")
+    global _CLASS_PALETTE_MODE
+    _CLASS_PALETTE_MODE = mode
+
+
+def get_class_colors(num_classes: int):
+    """Class colors in model class order (0=background, 1=wood, ...)."""
+    if _CLASS_PALETTE_MODE == "content":
+        return [mcolors.to_rgba(c) for c in CONTENT_CLASS_COLORS[:num_classes]]
+    colors = list(sns.color_palette("colorblind", num_classes))
+    if _CLASS_PALETTE_MODE == "paper" and num_classes > 1:
+        colors[1] = mcolors.to_rgba(WOOD_RED)  # wood red, as published
+    return colors
+
 
 # ---------------------------------------------------------------------------
 # Figure 6: likelihood with bootstrap, control / physical / simulated
@@ -59,7 +99,7 @@ def plot_likelihood_with_bootstrap(results, model_keys, num_classes, class_names
     spatial models are evaluated on the same shuffled hives, which is
     intentionally different from the other two panels (see original cell 42).
     """
-    class_colors = sns.color_palette("colorblind", num_classes)
+    class_colors = get_class_colors(num_classes)
     class_markers = ['o', 's', '^', 'D', 'v', '*']
     rng = np.random.default_rng(random_state)  # seeded: reproducible CIs
 
@@ -211,7 +251,7 @@ def plot_model_scatter3d_simplified(results, model_keys, model_idx=0, hive_idx=0
     simple_names = ['background', 'wood', 'empty_comb', 'any_brood', 'pollen',
                     'nectar_honey']
     num_classes = len(simple_names)
-    class_palette = sns.color_palette("colorblind", num_classes)
+    class_palette = get_class_colors(num_classes)
 
     config_key = model_keys[model_idx]
     model_output = results[config_key]
@@ -431,7 +471,7 @@ def plot_config_by_treatment(results, model_keys, num_classes, class_names,
     supplemental figure, ported from the original notebook cell that saved
     ``control_physical_simulated_likelihood_full.pdf``.  ``hive_slice``
     restricts to one treatment block (see ``plot_control_physical_simulated_full``)."""
-    class_colors = sns.color_palette("colorblind", num_classes)
+    class_colors = get_class_colors(num_classes)
     class_markers = ['o', 's', '^', 'D', 'v', '*']
 
     x = np.arange(len(CONFIG_ORDER))
