@@ -1,6 +1,7 @@
 # Honeybee Nest Morphogenesis — data and code
 
-Code and model weights for the honeybee nest content study in
+Analysis code, model weights, and data for the honeybee nest
+4D atlas study in
 
 > **Marting PR, Graving JM, et al.** *Morphogenesis, differentiation, and
 > robust multi-scale organization of the honeybee nest revealed by a novel 4D
@@ -9,9 +10,12 @@ Code and model weights for the honeybee nest content study in
 
 This repository contains
 
-* **`combinator/`** — a Python package porting the autoregressive
-  masked-convolutional model and its data pipeline (training, evaluation,
-  and figure generation) from the original analysis notebooks.
+* **`combinator/`** — a Python package for the study's 4D atlas data
+  (12 colonies × weekly comb-content masks): the observational analysis
+  (paper Figures 1–5) in the `combinator.content` sub-package, and the
+  autoregressive masked-convolutional model with its data pipeline
+  (training, evaluation, and figure generation; paper Figure 6), both
+  ported from the original analysis notebooks.
 * **`models/`** — the eight fitted paper model checkpoints
   (k=3 across all 7 one/two/three-axis configurations, plus the spatial
   null-model baseline, ≈62 MB total) with per-file provenance in
@@ -28,9 +32,19 @@ This repository contains
   per-configuration figure of all individual 1D/2D/3D contexts) plus the CSVs
   of the mean-likelihood values behind the averaged and per-configuration
   figures, all regenerated from the committed weights.
-* **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — the
-  comb-content analysis notebooks (consumes the deposited `CombMasks_*.npy`
-  and `df_*.csv` files in the repository root).
+* **`combinator/content/`** — the comb-content **analysis** package
+  (Figures 1–5): seasonality, cell/comb/nest-level organization,
+  specialization, and shuffled-vs-control comparisons, ported module-by-module
+  from the first author's notebooks with every paper number reproduced
+  (see [`RESULTS.md`](RESULTS.md)).
+* **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — thin
+  baked wrappers demonstrating the analysis package with all figures inline
+  (consumes the deposited `CombMasks_*.npy` and `df_*.csv` files in the
+  repository root; the original monolithic notebooks are in the git history).
+* **`tests/`** — a pytest suite that re-derives **every number the paper
+  text quotes for Figures 1–5** and fails if any drifts.
+* **`figures/analysis/`** — vector PDFs of every reproducible paper panel
+  (Figures 1–5), regenerated from the committed tables.
 * **`autoregressive_model.ipynb`** — the model notebook, driven entirely by
   the `combinator` package: load/relabel, align, crop, a 2-epoch training
   smoke test (plus the full `train_all_v2` reproduction call behind a flag —
@@ -48,7 +62,7 @@ The environment is managed with [uv](https://github.com/astral-sh/uv)
 
 ```bash
 uv sync --all-extras     # core + comb-content notebook dependencies
-# or, for just the model package (no OpenCV/landstats extras):
+# or, for just the core package — analysis + model (no OpenCV/landstats extras):
 uv sync
 ```
 
@@ -65,7 +79,30 @@ uv pip install "torch>=2.0+cu124" --index-url https://download.pytorch.org/whl/c
 `uv run python` (or activate `.venv`) from the repository root is all that
 is needed to use the package; it is installed editable by `uv sync`.
 
-## Quick start
+## Analysis pipeline — Figures 1–5 (`combinator.content`)
+
+The observational half of the paper (Figures 1–5: seasonality, cell
+aggregation, comb/nest organization, specialization, and the shuffling
+experiment) runs through `combinator.content`, one module per figure
+group (`seasonality`, `celllevel`, `comblevel`, `nestlevel`,
+`specialization`, `shuffled`), plus `make.py` — the ported generators
+for the derived tables (`df_cellneib`, `df_cellfuture`,
+`df_nearestdist*`).
+
+```bash
+uv run python -m combinator.make_analysis_figures   # figures/analysis/*.pdf
+uv run python -m combinator.make_content_tables     # regenerate derived tables
+uv run pytest -q                                    # every paper number, asserted
+```
+
+[`RESULTS.md`](RESULTS.md) maps each panel to its code, tabulates every
+validated paper number against its recomputation, and lists — with
+evidence — the parts of the analysis that the released data cannot
+reproduce (the segmentation network behind Figure 1B, a few offline
+statistics, and the landscape table behind the nest-level tables).  CI
+(`.github/workflows/tests.yml`) runs the fast suite on every push.
+
+## Quick start — the model (Figure 6)
 
 All of the following runs on CPU; add `CUDA_VISIBLE_DEVICES=<n>` to use a
 GPU (selecting the device with `torch.cuda.device_count()`-style indexing,
@@ -225,6 +262,13 @@ dimension-averaged Figure-6 numbers.
   --models-dir models --outdir figures` reproduces `figures/` from the
   committed weights plus the data, and `autoregressive_model.ipynb` walks
   through the same pipeline as the package API, cell by cell.
+* `python -m combinator.make_analysis_figures` reproduces every
+  reproducible panel of Figures 1–5 into `figures/analysis/`, and
+  `python -m combinator.make_content_tables` regenerates the derived
+  analysis tables from the comb masks (regeneration fidelity and the
+  non-regenerable parts: [`RESULTS.md`](RESULTS.md)).
+* `pytest` asserts all paper numbers of Figures 1–5; `.github/workflows/
+  tests.yml` runs lint + tests on every push.
 
 ## License
 

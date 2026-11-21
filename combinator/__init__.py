@@ -1,9 +1,18 @@
-"""combinator -- autoregressive masked-convolutional model of honeybee nest contents.
+"""combinator -- analysis and modeling of honeybee nest-content 4D atlas data.
 
-Code and model weights for the masked-convolutional autoregressive model
-described in Marting et al., "Morphogenesis, differentiation, and robust
-multi-scale organization of the honeybee nest revealed by a novel 4D atlas",
-Current Biology (2026).
+Code, models, and data for Marting et al., "Morphogenesis, differentiation,
+and robust multi-scale organization of the honeybee nest revealed by a novel
+4D atlas", Current Biology (2026).
+
+The package covers both halves of the paper:
+
+* ``combinator.content`` -- the full observational analysis of the 4D atlas
+  (nest-content seasonality, cell/comb/nest organization, specialization,
+  and the shuffling experiment; paper Figures 1-5), ported module-by-module
+  from the analysis notebooks with every paper number reproduced
+  (see RESULTS.md);
+* the autoregressive masked-convolutional model and its data pipeline
+  (training, evaluation, figure generation; paper Figure 6).
 
 See README.md for setup and usage, and models/MANIFEST.md for the provenance
 of each committed checkpoint.
