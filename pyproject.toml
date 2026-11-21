@@ -1,7 +1,7 @@
 [project]
 name = "combinator"
 version = "0.1.0"
-description = "Autoregressive masked-convolutional model of honeybee nest contents (data + code for the Current Biology 2026 manuscript)."
+description = "Analysis and modeling of honeybee nest-content 4D atlas data (code, models, and data for the Current Biology 2026 manuscript)."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
