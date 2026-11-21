@@ -17,7 +17,6 @@ from __future__ import annotations
 from collections import Counter
 from math import floor, log10
 
-import cv2
 import matplotlib.collections as collections
 import matplotlib.colors as mcolors
 import matplotlib.patches as patches
@@ -27,7 +26,8 @@ from matplotlib.patches import Arc, RegularPolygon
 from numpy import radians as rad
 import numpy as np
 import pandas as pd
-import plotly.express as px
+import scipy.interpolate as si
+from scipy.stats import ttest_ind, ttest_rel
 import seaborn as sns
 
 from .constants import (colony_names, contenthex, simplehex, treatmenthex,  # noqa: F401
@@ -169,6 +169,7 @@ def xyz_plot(data):
     y = data.y
     z = data.zspaced
     contents = data.content
+    import plotly.express as px  # optional viz dep (analysis extra)
     fig = px.scatter_3d(x=x, y=z, z=-y, color=contents, opacity=.15,
                    color_discrete_sequence=hex)
 
@@ -221,6 +222,7 @@ def arrange_nest(masks, colonyname, w, data, flip=True, shift=False):
 
 
 def get_class_contours(mask, class_id):
+    import cv2  # optional dep (analysis extra); unused by Figures 1-5
     """ Get contours for class_id in mask. 
     
     Args:
@@ -249,14 +251,13 @@ def get_interior_mask(mask, wood_class=1):
     Return:
         2D mask of size content mask with 1 inside frame and 0 outside.
     """
+    import cv2  # optional dep (analysis extra); unused by Figures 1-5
     wood_contours = get_class_contours(mask, class_id=wood_class)
     interior_mask = np.zeros_like(mask, dtype=np.uint8)
     if len(wood_contours)>1:
         cv2.drawContours(interior_mask, wood_contours, 1, 1, -1)
     return interior_mask
 
-
-import scipy.interpolate as si
 
 def bspline(cv, n=100, degree=3, periodic=False):
     """ Calculate n samples on a bspline
@@ -962,8 +963,6 @@ def powspace(start, stop, power, num):
 
 
 
-from scipy.stats import ttest_ind
-from scipy.stats import ttest_rel
 
 def add_sig_note(ax, data, x, y, hue, order=None, hue_order=None, y_offset=0.1, method='individual'):
     """
