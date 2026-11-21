@@ -92,6 +92,15 @@ def test_cell_specialist_share(contents):
         include_groups=False)
     assert per_colony.mean() == pytest.approx(60.9, abs=0.05)
     assert per_colony.std() == pytest.approx(3.9, abs=0.05)  # sample SD
+    # per-class spectrum quoted in the paper (mean ± SD over colonies)
+    for name, mean, sd in (("generalists", 39.1, 3.9),
+                           ("empty specialists", 20.4, 5.9),
+                           ("brood specialists", 18.9, 7.7),
+                           ("pollen specialists", 11.0, 4.9),
+                           ("nectar specialists", 10.6, 5.0)):
+        v = obs.loc[obs.specialization == name, "class_props"]
+        assert v.mean() == pytest.approx(mean, abs=0.05)
+        assert v.std() == pytest.approx(sd, abs=0.05)
 
 
 # --------------------------------------------------------------------------
@@ -106,13 +115,15 @@ def test_brood_failure_counts(contents):
             sub = df[(df.treatment == treat) & (df.source_name == src)
                      & (df.target_outcome == "failed")]
             per_colony = sub.groupby("colony").size()
-            got[(treat, src)] = (int(round(per_colony.mean())),
-                                 int(round(per_colony.std())))
+            got[(treat, src)] = (per_colony.mean(), per_colony.std())
     # paper: per-colony failed-cell totals over the 9 weekly transitions
-    assert got[("DD", "eggs")] == (2863, 488)
-    assert got[("DD", "larvae")] == (7260, 1003)
-    assert got[("SH", "eggs")] == (5407, 1966)
-    assert got[("SH", "larvae")] == (8224, 2256)
+    # (8,224.5 reported as 8,225 by conventional rounding)
+    for key, mean, sd in ((("DD", "eggs"), 2863, 488),
+                          (("DD", "larvae"), 7260, 1003),
+                          (("SH", "eggs"), 5407, 1966),
+                          (("SH", "larvae"), 8225, 2256)):
+        assert abs(got[key][0] - mean) <= 0.5, key
+        assert abs(got[key][1] - sd) <= 0.5, key
     # "88.9% higher rate ... for eggs ... 13.3% ... for larvae"
     for src, pct in (("eggs", 88.9), ("larvae", 13.3)):
         ratio = (got[("SH", src)][0] / got[("DD", src)][0] - 1) * 100
@@ -165,12 +176,13 @@ def test_life_stage_bootstrap_medians(tabs):
     np.random.seed(42)
     med, _err = shuffled.life_stage_bootstraps(tabs["df_mergedinsp"])
     dd, sh = med[0], med[1]
-    # paper (hierarchical bootstrap means, thousands): eggs 1.847/2.533,
-    # larvae 5.109/5.831, pupae 10.147/11.043, adults 13.795/13.772
-    assert dd[0] / 1000 == pytest.approx(1.827, abs=0.25)   # eggs control
-    assert sh[0] / 1000 == pytest.approx(2.518, abs=0.35)   # eggs shuffled
-    assert dd[1] / 1000 == pytest.approx(5.105, abs=0.3)    # larvae control
-    assert sh[1] / 1000 == pytest.approx(5.819, abs=0.3)    # larvae shuffled
+    # paper (hierarchical bootstrapping): control 1,825 ± 162 eggs /
+    # 5,109 ± 404 larvae / 10,133 ± 1,259 pupae / 13,816 ± 1,120 adults;
+    # shuffled 2,517 ± 167 / 5,831 ± 471 / 10,992 ± 1,397 / 13,806 ± 1,033
+    for obs, exp in ((dd[0], 1825), (sh[0], 2517), (dd[1], 5109),
+                     (sh[1], 5831), (dd[2], 10133), (sh[2], 10992),
+                     (dd[3], 13816), (sh[3], 13806)):
+        assert obs == pytest.approx(exp, abs=200)  # unseeded-vs-seeded jitter
     # "mean difference ... 686.1 ± 510" more eggs in shuffled
     assert (sh[0] - dd[0]) == pytest.approx(686, abs=400)
 
