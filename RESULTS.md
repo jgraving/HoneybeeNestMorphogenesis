@@ -148,10 +148,10 @@ including it gives 35 vs 15 = 57.1%).
 8. `3d_convolution_animation.gif` in the repository has no code that
    produces or consumes it (orphan artifact, kept for provenance).
 
-## Provenance and regeneration fidelity
+## Provenance and re-run fidelity
 
 - The committed `df_*.csv` tables are **canonical inputs**; CI and tests
-  never regenerate them.
+  never re-run these generators.
 - `python -m combinator.make_content_tables` re-runs the released
   generators from the mask arrays:
   - `df_cellneib` / `df_cellfuture`: identical except last-bit float

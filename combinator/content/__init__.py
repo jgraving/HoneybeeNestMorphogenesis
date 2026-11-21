@@ -1,6 +1,6 @@
 """Comb-content analysis (paper Figures 1-5).
 
-Reproduces the first author's ``CombContent_Analysis.ipynb`` pipeline:
+The paper's comb-content analysis — one module per figure group:
 seasonality of nest contents (Fig. 1), cell-level neighbourhood,
 transitions and clustering (Fig. 2), comb- and nest-level composition
 (Fig. 3), specialization (Fig. 4) and the shuffled-vs-control comparisons

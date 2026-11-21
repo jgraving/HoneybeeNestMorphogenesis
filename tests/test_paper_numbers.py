@@ -200,7 +200,7 @@ def test_content_fluctuation_bootstrap(tabs):
 
 @pytest.mark.slow
 def test_nearest_neighbour_table_full_reproduction(tabs, masks):
-    """Regenerate df_nearestdist from the masks with the notebook seed.
+    """Rebuild df_nearestdist from the masks with the pipeline seed.
 
     Deterministic columns must match bit-for-bit; Monte-Carlo columns
     only within sampling noise (the committed table's random stream

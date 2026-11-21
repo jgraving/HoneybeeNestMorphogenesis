@@ -1,7 +1,6 @@
 """Cell and comb specialization (paper Figure 4B, D, E, F).
 
-Ported from the ``# Specialization`` section (cells 51–60) of the first
-author's ``CombContent_Analysis.ipynb``.
+Derived from the paper's ``CombContent_Analysis.ipynb``.
 
 Panels (legend, Figure 4): (A) schematic of the cell-sequence concept —
 drawn, no code; (B) ten-week content histories of every cell in all

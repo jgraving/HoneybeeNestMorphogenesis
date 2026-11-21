@@ -1,6 +1,6 @@
 """Generators for the committed derived tables (from the analysis masks).
 
-Ported from the first author's ``CombContent_Make.ipynb``: the cell
+Derived from the paper's ``CombContent_Make.ipynb``: the cell
 neighbourhood table (``df_cellneib.csv``), the cell future-self table
 ``df_cellfuture.csv``, and the comb-face cluster-metric table
 (``df_nearestdist.csv`` / ``df_nearestdist_sum.csv``).  Runtime:
@@ -9,12 +9,12 @@ neighbourhood table (``df_cellneib.csv``), the cell future-self table
 
 The nest-level 3D tables (``df_nearestdist_nest*.csv``) additionally
 require ``df_mergedlandscape.csv`` — the per-frame pylandstats landscape
-table that was never released — so they cannot be regenerated (see
+table that was never released — so they cannot be reproduced from the released data (see
 ``RESULTS.md``); :func:`nest_nearest_neighbour_table` raises unless the
 file is supplied.
 
 These are the *slow, canonical* inputs to the analysis modules: tests
-and CI use the committed CSVs; regenerating them exactly reproduces the
+and CI use the committed CSVs; re-running them reproduces the
 committed tables where the pipeline is deterministic (the neighbour and
 future-self tables) or seeded (``nearest_neighbour_table``, ``np.random.
 seed(42)``); the float columns agree to within ~1e-14 relative rounding
@@ -214,7 +214,7 @@ def nearest_neighbour_table(ContentsCrop: np.ndarray, thres: int = 10,
     appended = []
     # NOTE(original): the notebook hardcoded range(12) colonies; iterating
     # len(ContentsCrop) is identical for the full 12-colony array and
-    # permits subset regeneration for validation.
+    # permits subset re-runs for validation.
     for c in range(len(ContentsCrop)):
         for w in range(len(ContentsCrop[c])):
             for f in range(20):
@@ -286,7 +286,7 @@ def nest_nearest_neighbour_table(ContentsCrop: np.ndarray,
     Requires ``df_mergedlandscape.csv`` (the per-frame landscape table,
     **not released** with the paper) to arrange each nest, and is
     additionally unseeded in the original notebook — so the committed
-    nest tables cannot be regenerated bit-for-bit; treat them as
+    nest tables cannot be reproduced bit-for-bit; treat them as
     canonical (see ``RESULTS.md``).  This function ports the computation
     (Make cells 31–33) for completeness once the landscape table is
     available.

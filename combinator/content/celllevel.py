@@ -1,7 +1,6 @@
 """Cell-level organization (paper Figure 2).
 
-Ported from the ``# Cell Level`` section (cells 21, 23, 26–28, 30–32) of
-the first author's ``CombContent_Analysis.ipynb``.
+Derived from the paper's ``CombContent_Analysis.ipynb``.
 
 Panels (legend, Figure 2): (A) local-neighborhood composition network;
 (B) week-to-week content-transition network (spring growth); (C) a
@@ -13,8 +12,8 @@ content, first 10 weeks; (G) weighted-average nest-level cluster metric
 per colony over time.
 
 The cluster metric itself (normalized observed vs randomized same-content
-nearest-neighbour proximity) was computed offline by the first author's
-pylandstats-based pipeline and shipped in ``df_nearestdist*.csv``; the
+nearest-neighbour proximity) was computed offline with a pylandstats-based
+pipeline and shipped in ``df_nearestdist*.csv``; the
 Monte-Carlo p-values in those tables are likewise committed, not
 recomputed here.  See ``RESULTS.md``.
 """

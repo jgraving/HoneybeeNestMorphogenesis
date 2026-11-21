@@ -1,7 +1,6 @@
 """Seasonality of nest contents through time (paper Figure 1C–F).
 
-Ported from the ``# Seasonality`` section (cell 18) of the first author's
-``CombContent_Analysis.ipynb``.  Figure 1A–B are photograph/schematic
+Derived from the paper's ``CombContent_Analysis.ipynb``.  Figure 1A–B are photograph/schematic
 panels; the comb-segmentation network behind Figure 1B is not released
 with the paper (see ``RESULTS.md``).
 

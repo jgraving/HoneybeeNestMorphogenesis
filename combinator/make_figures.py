@@ -1,4 +1,4 @@
-"""Regenerate the paper's model figures from committed checkpoints.
+"""Reproduce the paper's model figures from committed checkpoints.
 
 Usage (from the package root):
 

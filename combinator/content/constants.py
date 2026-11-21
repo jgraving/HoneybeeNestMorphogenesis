@@ -1,6 +1,6 @@
 """Names, colours and geometry constants for the comb-content analysis.
 
-Ported verbatim from the first author's ``CombContent_Analysis.ipynb``
+Taken verbatim from the original ``CombContent_Analysis.ipynb``
 (import cell); colours are the paper's Figure 1--5 palette.
 """
 

@@ -1,4 +1,4 @@
-"""Regenerate the paper's analysis figures (Figures 1-5) from committed tables.
+"""Reproduce the paper's analysis figures (Figures 1-5) from committed tables.
 
 Usage (from the package root):
 

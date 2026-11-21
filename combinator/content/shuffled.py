@@ -1,7 +1,6 @@
 """Shuffled-vs-control nest comparisons (paper Figure 5B–G).
 
-Ported from the ``# Shuffled Nest Comparison`` section (cells 63–64,
-66–69, 71–77, 79–80) of the first author's ``CombContent_Analysis.ipynb``.
+Derived from the paper's ``CombContent_Analysis.ipynb``.
 
 Panels (legend, Figure 5): (A) schematic of the shuffling regime —
 drawn, no code; (B) amount of bees at each life stage per colony-week

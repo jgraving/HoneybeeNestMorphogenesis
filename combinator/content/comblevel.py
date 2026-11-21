@@ -1,7 +1,6 @@
 """Comb-level organization (paper Figure 3A, 3B).
 
-Ported from the ``# Comb Level`` section (cells 35–45) of the first
-author's ``CombContent_Analysis.ipynb``.
+Derived from the paper's ``CombContent_Analysis.ipynb``.
 
 Panels (legend, Figure 3A/B): (A) PCA of 10 comb-level features over
 time — comb trajectories through the PC1–PC2 plane with example comb

@@ -8,8 +8,8 @@ tables (closest: ~91% ± 11 pollen on the pollen-heavy occupied half).
 They are treated like the Figure 3B KS p-values — computed offline,
 documented in ``RESULTS.md``.
 
-Ported from the ``# Nest Level`` section (cells 47–48) of the first
-author's ``CombContent_Analysis.ipynb``.
+Implements the ``# Nest Level`` section (cells 47–48) of the original
+``CombContent_Analysis.ipynb``.
 
 Panels (legend, Figure 3C/D): (C) mean distribution of worker and drone
 comb across the combs of all nests (x axis = reoriented comb position,

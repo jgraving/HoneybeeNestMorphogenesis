@@ -1,7 +1,7 @@
 """Loaders for the comb-content masks and statistics tables.
 
 The masks (``CombMasks_*.npy``) and derived tables (``df_*.csv``) live in the
-repository root; they were produced by the first author's imaging pipeline
+repository root; they were produced by the paper's imaging pipeline
 (see ``RESULTS.md`` for provenance and the one table whose generator is not
 released).  The loading/derivation here reproduces the "Import masks" and
 "Import dataframes" cells of ``CombContent_Analysis.ipynb`` verbatim, so the

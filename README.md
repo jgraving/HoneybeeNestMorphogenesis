@@ -31,7 +31,7 @@ This repository contains
   comparison, Figure 6B 3D visualization, kernel legend, and the supplemental
   per-configuration figure of all individual 1D/2D/3D contexts) plus the CSVs
   of the mean-likelihood values behind the averaged and per-configuration
-  figures, all regenerated from the committed weights.
+  figures, all reproduced from the committed weights.
 * **`combinator/content/`** — the comb-content **analysis** package
   (Figures 1–5): seasonality, cell/comb/nest-level organization,
   specialization, and shuffled-vs-control comparisons, ported module-by-module
@@ -44,10 +44,10 @@ This repository contains
 * **`tests/`** — a pytest suite that re-derives **every number the paper
   text quotes for Figures 1–5** and fails if any drifts.
 * **`figures/analysis/`** — vector PDFs of every reproducible paper panel
-  (Figures 1–5), regenerated from the committed tables.
+  (Figures 1–5), reproduced from the committed tables.
 * **`autoregressive_model.ipynb`** — the model notebook, driven entirely by
   the `combinator` package: load/relabel, align, crop, a 2-epoch training
-  smoke test (plus the full `train_all_v2` reproduction call behind a flag —
+  smoke test (plus the full `train_all_v2` training run behind a flag —
   the committed checkpoints are never re-trained by the notebook), evaluation
   of the eight committed checkpoints on the 18-hive set, and all paper
   figures displayed in-cell. Its stored outputs include the prediction run
@@ -91,7 +91,7 @@ for the derived tables (`df_cellneib`, `df_cellfuture`,
 
 ```bash
 uv run python -m combinator.make_analysis_figures   # figures/analysis/*.pdf
-uv run python -m combinator.make_content_tables     # regenerate derived tables
+uv run python -m combinator.make_content_tables     # rebuild derived tables
 uv run pytest -q                                    # every paper number, asserted
 ```
 
@@ -268,9 +268,10 @@ dimension-averaged Figure-6 numbers.
   through the same pipeline as the package API, cell by cell.
 * `python -m combinator.make_analysis_figures` reproduces every
   reproducible panel of Figures 1–5 into `figures/analysis/`, and
-  `python -m combinator.make_content_tables` regenerates the derived
-  analysis tables from the comb masks (regeneration fidelity and the
-  non-regenerable parts: [`RESULTS.md`](RESULTS.md)).
+  `python -m combinator.make_content_tables` re-builds the derived
+  analysis tables from the comb masks (how faithfully re-running matches
+  the committed files, and the parts that cannot be re-built:
+  [`RESULTS.md`](RESULTS.md)).
 * `pytest` asserts all paper numbers of Figures 1–5; `.github/workflows/
   tests.yml` runs lint + tests on every push.
 

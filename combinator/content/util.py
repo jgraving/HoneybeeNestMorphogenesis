@@ -1,6 +1,6 @@
 """Shared function library for the comb-content analysis.
 
-Ported verbatim from the first author's ``CombContent_Analysis.ipynb``:
+Taken verbatim from the original ``CombContent_Analysis.ipynb``:
 the "Functions" cell (mask geometry, display helpers, cell/comb
 specialization, hierarchical bootstrapping) followed by the
 "Bootstrapping" cell.  The bootstrapping cell redefines
@@ -9,7 +9,7 @@ versions (the later definition wins, exactly as in the notebook) and adds
 ``comparative_hierarchical_bootstrap``.
 
 Bootstrap functions use the global ``numpy.random`` stream; callers that
-need reproducibility (tests, figure regeneration) seed it themselves.
+need reproducibility (tests, figure re-runs) seed it themselves.
 """
 
 from __future__ import annotations

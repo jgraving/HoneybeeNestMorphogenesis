@@ -1,8 +1,7 @@
-"""Regenerate the derived comb-content tables from the comb masks.
+"""Rebuild the derived comb-content tables from the comb masks.
 
-Re-runs the slow generators from ``combinator.content.make`` (ported from
-the first author's ``CombContent_Make.ipynb``) over the released mask
-arrays.  Usage (from the package root):
+Re-runs the slow generators from ``combinator.content.make`` (the generators
+from the original ``CombContent_Make.ipynb``) over the released mask arrays.  Usage (from the package root):
 
     uv run python -m combinator.make_content_tables \
         --tables nearestdist --outdir tables/
