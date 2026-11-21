@@ -1,12 +1,15 @@
 """Figures for the masked-convolutional autoregressive model.
 
-Ports the plotting cells from the original notebook so that the three
-representative outputs of the paper --
+Ports the plotting cells from the original notebook so that the paper's
+model outputs --
 
 * ``control_physical_simulated_likelihood.pdf``  (Figure 6: control vs
-  treatment vs simulated, with hierarchical-bootstrap CIs),
+  treatment vs simulated, 1D/2D/3D-averaged, with hierarchical-bootstrap CIs),
+* ``supplement_config_likelihood.pdf``           (the per-configuration
+  supplemental figure: each individual 1D/2D/3D receptive-field
+  configuration, per treatment group),
 * ``3d_predictions_likelihood.png``              (Figure 6B: 3D voxel view),
-* ``spatial_legend_subset.pdf``                   (Figure S: kernel legend)
+* ``spatial_legend_subset.pdf``                  (Figure S: kernel legend)
 
 -- can be regenerated from a results dict (see ``combinator.eval``).
 
@@ -322,71 +325,247 @@ def plot_masked_kernel(ax, dims):
     ax.axis("off")
 
 
-def mean_class_likelihood(hives, cls):
-    """Figure-6 metric for a hive group: mean, over weeks (and hives), of the
-    model's predicted probability of class ``cls`` at voxels whose ground-truth
-    label is ``cls``.  The ``.reshape(-1)`` is required before boolean
-    indexing."""
-    vals = []
-    for hive in hives:
-        gt = hive["ground_truth"]
-        probs = np.exp(hive["log_likelihood"])
-        for t in range(gt.shape[0]):
-            m = gt[t].reshape(-1) == cls
-            if m.any():
-                vals.append(float(probs[t].reshape(-1)[m].mean()))
-    return float(np.mean(vals)) if vals else float("nan")
+# ---------------------------------------------------------------------------
+# Per-configuration figure (original notebook cells 40/41: saves
+# ``control_physical_simulated_likelihood_full.pdf``; the paper's per-config
+# supplemental figure) and likelihood-over-time (cells 38/39)
+# ---------------------------------------------------------------------------
 
-
+#: The seven individual spatial configurations, in the order plotted on the
+#: x-axis of the per-configuration figure.
 CONFIG_ORDER = [(True, False, False), (False, True, False), (False, False, True),
                 (True, True, False), (True, False, True), (False, True, True),
                 (True, True, True)]
-CONFIG_LABELS = ["depth", "height", "width",
-                 "depth x height", "depth x width", "height x width",
-                 "depth x height x width"]
+CONFIG_LABELS = ["Depth", "Height", "Width", "D\u00d7H", "D\u00d7W",
+                 "H\u00d7W", "D\u00d7H\u00d7W"]
 
 
-def plot_config_landscape(results, model_keys, class_names,
-                          out="supplement_config_likelihood.pdf"):
-    """Supplemental figure: mean likelihood of *each individual* 1D/2D/3D
-    configuration (k=3), instead of the dimension-averaged values of Figure 6.
-    One panel per class; x-axis = the seven spatial-axis configurations;
-    solid lines = control / treatment / simulated groups, dashed lines of the
-    same color = the k=1 (no spatial context) baseline.  Hive blocks in
-    ``results`` must be ordered [control(6), physical(6), simulated(6)]."""
-    groups = {"control": slice(0, 6), "treatment": slice(6, 12),
-              "simulated": slice(12, 18)}
-    keys = {(k[1], k[2], k[3]): k for k in model_keys if k[0] == 3}
-    baseline_key = next(k for k in model_keys
-                        if k[0] == 1 and k[1:4] == (False, False, False))
+def _likelihood_matrix(hives, num_classes):
+    """(weeks x classes) matrix of mean predicted probability of class ``cls``
+    at voxels whose ground-truth label is ``cls``; NaN where a class is absent.
+    Identical to the original notebook's ``get_likelihood_matrix``."""
+    matrix = []
+    for hive in hives:
+        gt = hive['ground_truth']
+        loglik = hive['log_likelihood']
+        probs = np.exp(loglik)
+        hive_vals = []
+        for t in range(gt.shape[0]):
+            gt_t = gt[t].flatten()
+            prob_t = probs[t].reshape(-1)
+            frame_vals = [prob_t[gt_t == cls].mean() if np.any(gt_t == cls)
+                          else np.nan for cls in range(num_classes)]
+            hive_vals.append(frame_vals)
+        matrix.append(np.array(hive_vals))
+    return matrix
 
-    gcolors = dict(zip(groups, sns.color_palette("colorblind", 3)))
-    gmarkers = {"control": "o", "treatment": "s", "simulated": "^"}
 
-    fig, axes = plt.subplots(2, 3, figsize=(13, 6), dpi=300)
+def per_config_bootstrap_stats(results, model_keys, num_classes, hive_slice,
+                               n_bootstrap=1000, ci=95, rng=None):
+    """Hierarchical-bootstrap (hives, then weeks) mean + CI of the per-config
+    likelihood metric, for every individual configuration in ``CONFIG_ORDER``.
+    Returns (means, lowers, uppers): ``means[cls][i]`` is the mean for class
+    ``cls`` and the i-th configuration (aligned with ``CONFIG_ORDER``);
+    ``lowers[cls][i] = mean - CI low`` and ``uppers[cls][i] = CI high - mean``
+    (the errorbar asymmetry the original cell plots).  ``hive_slice`` selects
+    the panel's hive block, e.g. ``slice(0, 6)`` for control.
+    ``rng`` (an ``np.random.Generator``) makes the CIs reproducible."""
+    if rng is None:
+        rng = np.random.default_rng()
+
+    means = {cls: [] for cls in range(num_classes)}
+    lowers = {cls: [] for cls in range(num_classes)}
+    uppers = {cls: [] for cls in range(num_classes)}
+
+    for dhw in CONFIG_ORDER:
+        key = next((k for k in model_keys if k[0] == 3 and k[1:4] == dhw), None)
+        if not key:
+            for cls in range(num_classes):
+                means[cls].append(np.nan)
+                lowers[cls].append(np.nan)
+                uppers[cls].append(np.nan)
+            continue
+
+        arr = np.array(_likelihood_matrix(results[key]['hives'][hive_slice],
+                                          num_classes), dtype=object)
+        for cls in range(num_classes):
+            samples = []
+            for _ in range(n_bootstrap):
+                hive_ids = rng.choice(len(arr), len(arr), replace=True)
+                cls_vals = []
+                for h in hive_ids:
+                    weeks = arr[h]
+                    week_ids = rng.choice(len(weeks), len(weeks), replace=True)
+                    cls_vals.extend([weeks[w][cls] for w in week_ids
+                                     if not np.isnan(weeks[w][cls])])
+                if cls_vals:
+                    samples.append(np.mean(cls_vals))
+            if samples:
+                mu = np.mean(samples)
+                lo = np.percentile(samples, (100 - ci) / 2)
+                hi = np.percentile(samples, 100 - (100 - ci) / 2)
+                means[cls].append(mu)
+                lowers[cls].append(mu - lo)
+                uppers[cls].append(hi - mu)
+            else:
+                means[cls].append(np.nan)
+                lowers[cls].append(np.nan)
+                uppers[cls].append(np.nan)
+    return means, lowers, uppers
+
+
+def plot_config_by_treatment(results, model_keys, num_classes, class_names,
+                             n_bootstrap=1000, ci=95, hive_slice=None,
+                             title="", ax=None, random_state=42, out=None):
+    """Likelihood for each *individual* spatial configuration (the 7
+    1D/2D/3D receptive-field combinations), with the pure-chance baseline
+    (1/num_classes) dashed -- the per-configuration panel of the paper's
+    supplemental figure, ported from the original notebook cell that saved
+    ``control_physical_simulated_likelihood_full.pdf``.  ``hive_slice``
+    restricts to one treatment block (see ``plot_control_physical_simulated_full``)."""
+    class_colors = sns.color_palette("colorblind", num_classes)
+    class_markers = ['o', 's', '^', 'D', 'v', '*']
+
     x = np.arange(len(CONFIG_ORDER))
-    for cls, ax in enumerate(axes.ravel()):
-        for gname, sl in groups.items():
-            vals = [mean_class_likelihood(results[keys[dhw]]["hives"][sl], cls)
-                    for dhw in CONFIG_ORDER]
-            base = [mean_class_likelihood(results[baseline_key]["hives"][sl], cls)] * len(vals)
-            ax.plot(x, base, color=gcolors[gname], ls="--", lw=1.0, alpha=0.55)
-            ax.plot(x, vals, color=gcolors[gname], marker=gmarkers[gname], lw=1.5)
-        ax.set_title(class_names[cls], fontsize=10)
-        ax.set_xticks(x)
-        ax.set_xticklabels(CONFIG_LABELS, rotation=35, ha="right", fontsize=7)
-        ax.set_ylim(-0.05, 1.05)
-        ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
-    axes[0, 0].set_ylabel("Likelihood")
-    handles = [plt.Line2D([], [], color=gcolors[g], lw=1.5, marker=gmarkers[g],
-                          label=f"{g} (k=3)") for g in groups]
-    handles.append(plt.Line2D([], [], color="0.4", ls="--", label="baseline (k=1)"))
-    fig.legend(handles=handles, loc="upper center", ncol=4, fontsize=9,
-               bbox_to_anchor=(0.5, 1.10))
+
+    # Baseline is pure chance: 1 / num_classes
+    baseline_avg = 1.0 / num_classes
+
+    means, lowers, uppers = per_config_bootstrap_stats(
+        results, model_keys, num_classes, hive_slice,
+        n_bootstrap=n_bootstrap, ci=ci,
+        rng=np.random.default_rng(random_state) if hive_slice is not None
+        else None)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
+    else:
+        fig = ax.figure
+
+    for cls in range(num_classes):
+        y = means[cls]
+        yerr = [lowers[cls], uppers[cls]]
+        ax.errorbar(
+            x, y, yerr=yerr,
+            fmt=class_markers[cls % len(class_markers)] + '-',
+            label=class_names[cls],
+            color=class_colors[cls % len(class_colors)],
+            capsize=4
+        )
+
+    ax.axhline(baseline_avg, color='black', linestyle='dashed', linewidth=1.5,
+               label="Baseline")
+    ax.set_ylabel("Likelihood")
+    ax.set_xticks(x)
+    ax.set_xticklabels(CONFIG_LABELS, rotation=45, ha='right')
+    ax.set_ylim(-0.05, 1.05)
+    ax.set_title(title)
+    ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
+
+    if out is not None:
+        plt.savefig(out, bbox_inches="tight")
+        plt.close(fig)
+        return out
+    return fig, ax
+
+
+def plot_control_physical_simulated_full(results, model_keys, num_classes,
+                                         class_names, n_bootstrap=1000, ci=95,
+                                         random_state=42,
+                                         out="supplement_config_likelihood.pdf"):
+    """The per-configuration supplemental figure: three panels -- control
+    (unshuffled), physically shuffled treatment, and simulated (manually)
+    shuffled -- each showing all seven individual receptive-field
+    configurations.  Hive blocks in ``results`` must be ordered
+    [control(6), physical(6), manual(6)]."""
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4), dpi=300, sharey=True)
+
+    panels = [
+        (slice(0, 6), "Control (Unshuffled)"),
+        (slice(6, 12), "Treatment (Shuffled)"),
+        (slice(12, 18), "Simulated (Shuffled)"),
+    ]
+    for (hive_slice, title), ax in zip(panels, axes):
+        plot_config_by_treatment(results, model_keys, num_classes, class_names,
+                                 ax=ax, title=title, hive_slice=hive_slice,
+                                 n_bootstrap=n_bootstrap, ci=ci,
+                                 random_state=random_state)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper center', ncol=len(labels),
+               fontsize=9, bbox_to_anchor=(0.5, 1.07))
+    axes[1].set_ylabel('')
+    axes[2].set_ylabel('')
     plt.tight_layout()
     plt.savefig(out, bbox_inches="tight")
     plt.close(fig)
     return out
+
+
+def plot_likelihood_over_time(results, model_keys, class_names, model_idx=0,
+                              n_bootstrap=1000, ci=95, random_state=42):
+    """Likelihood over time for one configuration (``model_idx`` into
+    ``model_keys``) across the first six hives (the control block), with
+    per-week bootstrap CIs -- the original notebook cells 38/39.  Weeks after
+    the 10th are stretched on the x-axis (``10 + (w-10) * 2``) so early
+    seasons get more room, as in the original."""
+    class_colors = sns.color_palette("colorblind", len(class_names))
+    class_markers = ['o', 's', '^', 'D', 'v', '*']
+    rng = np.random.default_rng(random_state)
+
+    config_key = model_keys[model_idx]
+    hives = results[config_key]['hives'][:6]
+
+    # Collect values per class and per week
+    values = {cls: {} for cls in range(len(class_names))}
+    max_week = 0
+    for hive in hives:
+        loglik = hive['log_likelihood']
+        gt = hive['ground_truth']
+        max_week = max(max_week, gt.shape[0])
+        for t in range(gt.shape[0]):
+            for cls in range(len(class_names)):
+                mask = (gt[t] == cls)
+                if not np.any(mask):
+                    continue
+                values[cls].setdefault(t, []).append(np.exp(loglik[t])[mask].mean())
+
+    means, lowers, uppers = {}, {}, {}
+    for cls in range(len(class_names)):
+        means[cls], lowers[cls], uppers[cls] = [], [], []
+        for week in range(max_week):
+            week_vals = values[cls].get(week, [])
+            if not week_vals:
+                means[cls].append(np.nan)
+                lowers[cls].append(np.nan)
+                uppers[cls].append(np.nan)
+                continue
+            samples = [
+                np.mean(rng.choice(week_vals, size=len(week_vals), replace=True))
+                for _ in range(n_bootstrap)
+            ]
+            mu = np.mean(samples)
+            lo = np.percentile(samples, (100 - ci) / 2)
+            hi = np.percentile(samples, 100 - (100 - ci) / 2)
+            means[cls].append(mu)
+            lowers[cls].append(mu - lo)
+            uppers[cls].append(hi - mu)
+
+    fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
+    x_values = [w if w <= 10 else 10 + (w - 10) * 2 for w in range(max_week)]
+    for cls in range(len(class_names)):
+        y = means[cls]
+        yerr = [lowers[cls], uppers[cls]]
+        ax.errorbar(x_values, y, yerr=yerr, fmt=class_markers[cls] + '-',
+                    label=class_names[cls], color=class_colors[cls], capsize=4)
+    ax.set_title("Likelihood Over Time")
+    ax.set_xlabel("Week")
+    ax.set_ylabel("Likelihood")
+    ax.set_ylim(-0.05, 1.05)
+    ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
+    ax.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), borderaxespad=0.)
+    plt.tight_layout()
+    return fig, ax
 
 
 def plot_kernel_legend_subset(out="spatial_legend_subset.pdf"):

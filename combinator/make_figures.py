@@ -15,8 +15,9 @@ and writes:
 * ``3d_predictions_likelihood.png``               (Figure 6B)
 * ``spatial_legend_subset.pdf``                   (kernel legend, Figure S)
 * ``mean_likelihood_figure6.csv``                  (the numbers behind Fig. 6)
-* ``supplement_config_likelihood.pdf``            (per-configuration figure,
-    the supplement's individual 1D/2D/3D context configurations)
+* ``supplement_config_likelihood.pdf``            (the per-configuration
+    supplemental figure: mean likelihood for each individual 1D/2D/3D
+    receptive-field configuration, per treatment group)
 * ``mean_likelihood_per_config.csv``               (numbers behind that figure)
 
 The full per-hive, per-voxel ``results`` dict is large (~640 MB) and is NOT
@@ -87,8 +88,9 @@ def make_figures(results, outdir, hive_idx=4, week=10):
         out=os.path.join(outdir, "spatial_legend_subset.pdf"))
     print(f"  wrote {legend}")
 
-    config_pdf = plotting.plot_config_landscape(
-        results, model_keys, plotting.DEFAULT_NAMES,
+    config_pdf = plotting.plot_control_physical_simulated_full(
+        results, model_keys, num_classes=6, class_names=plotting.DEFAULT_NAMES,
+        n_bootstrap=1000, ci=95, random_state=42,
         out=os.path.join(outdir, "supplement_config_likelihood.pdf"))
     print(f"  wrote {config_pdf}")
 
@@ -195,38 +197,39 @@ def _write_figure6_csv(results, outdir):
 
 
 def _write_per_config_csv(results, outdir):
-    """Write mean_likelihood_per_config.csv: the Figure-6 metric for each
-    *individual* k=3 configuration (rows = class x configuration), by hive
-    group, plus the k=1 baseline.  These are the numbers behind the
-    supplemental per-configuration figure."""
+    """Write mean_likelihood_per_config.csv: per-configuration bootstrap mean
+    likelihood for each individual k=3 configuration (rows = class x
+    configuration), by hive group, plus the pure-chance baseline -- the means
+    the per-configuration supplemental figure plots."""
     import csv
 
-    from .plotting import CONFIG_LABELS, CONFIG_ORDER, mean_class_likelihood
+    from .plotting import (CONFIG_LABELS, CONFIG_ORDER,
+                           per_config_bootstrap_stats)
 
     class_names = plotting.DEFAULT_NAMES
+    num_classes = len(class_names)
     path_slices = {"control": slice(0, 6), "treatment": slice(6, 12),
                    "simulated": slice(12, 18)}
-    keys = {(k[1], k[2], k[3]): k for k in results if k[0] == 3}
-    baseline_key = next(k for k in results
-                        if k[0] == 1 and k[1:4] == (False, False, False))
-    baseline = {
-        name: {cls: mean_class_likelihood(results[baseline_key]["hives"][sl], cls)
-               for cls in range(len(class_names))}
-        for name, sl in path_slices.items()
-    }
+    baseline_avg = 1.0 / num_classes
+    model_keys = list(results)
 
     with open(os.path.join(outdir, "mean_likelihood_per_config.csv"), "w",
               newline="") as f:
         w = csv.writer(f)
-        header = ["configuration", "class"] + list(path_slices) + \
-                 [f"baseline_{p}" for p in path_slices]
+        header = ["configuration", "class"] + list(path_slices) + ["baseline"]
         w.writerow(header)
         for dhw, label in zip(CONFIG_ORDER, CONFIG_LABELS):
+            per_path = {
+                name: per_config_bootstrap_stats(
+                    results, model_keys, num_classes, sl, n_bootstrap=1000,
+                    ci=95, rng=np.random.default_rng(42))[0]
+                for name, sl in path_slices.items()
+            }
+            idx = CONFIG_ORDER.index(dhw)
             for cls, cname in enumerate(class_names):
-                row = [label, cname] + [
-                    f"{mean_class_likelihood(results[keys[dhw]]['hives'][sl], cls):.4f}"
-                    for _n, sl in path_slices.items()
-                ] + [f"{baseline[p][cls]:.4f}" for p in path_slices]
+                row = [label, cname] + \
+                      [f"{per_path[p][cls][idx]:.4f}" for p in path_slices] + \
+                      [f"{baseline_avg:.4f}"]
                 w.writerow(row)
     print(f"  wrote {os.path.join(outdir, 'mean_likelihood_per_config.csv')}")
 

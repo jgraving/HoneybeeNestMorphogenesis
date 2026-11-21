@@ -31,8 +31,11 @@ This repository contains
 * **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — the
   comb-content analysis notebooks (consumes the deposited `CombMasks_*.npy`
   and `df_*.csv` files in the repository root).
-* **`autoregressive_model.ipynb`** — an interactive walkthrough of the
-  autoregressive model using the package.
+* **`autoregressive_model.ipynb`** — the cleaned-up original model
+  notebook (load/relabel, align, crop, model, dataset, evaluation of the
+  eight committed checkpoints on the 18-hive set, and the paper's model
+  figures). The training loop is kept as a commented provenance reference;
+  the notebook's stored outputs show the prediction run and every figure.
 
 ---
 
@@ -189,10 +192,12 @@ class-weighted cross-entropy with inverse-frequency weights.
 | 1 × 3D: d+h+w | Full 3-D context — the main model |
 
 Figure 6 averages the 1-D and 2-D configurations separately and shows the
-3-D model and the k=1 baseline. The per-configuration values behind Figure 6
-are in **`figures/mean_likelihood_per_config.csv`**, plotted in
-**`figures/supplement_config_likelihood.pdf`** (the paper reports them in its
-supplement); **`figures/mean_likelihood_figure6.csv`** holds the
+3-D model and the k=1 baseline. The values for the *individual* 1D/2D/3D
+configurations (the paper's supplemental per-configuration figure) are in
+**`figures/mean_likelihood_per_config.csv`**, plotted in
+**`figures/supplement_config_likelihood.pdf`** (mean-likelihood per
+configuration and treatment panel, with the pure-chance baseline at
+1/num\_classes); **`figures/mean_likelihood_figure6.csv`** holds the
 dimension-averaged Figure-6 numbers.
 
 ## What "shuffling" means
