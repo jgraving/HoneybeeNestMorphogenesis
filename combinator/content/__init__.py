@@ -8,7 +8,7 @@ transitions and clustering (Fig. 2), comb- and nest-level composition
 figure group adds the figure functions.
 """
 
-from . import constants, data, seasonality, util
+from . import celllevel, constants, data, seasonality, util
 from .constants import *  # noqa: F401,F403
 from .data import load_masks, load_tables, px_to_cm
 
@@ -16,4 +16,5 @@ __all__ = [
     "constants", "data", "util",
     "load_masks", "load_tables", "px_to_cm",
     "seasonality",
+    "celllevel",
 ]
