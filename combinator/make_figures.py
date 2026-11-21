@@ -130,13 +130,13 @@ def make_figures_cli() -> None:
         _save_results(results, args.save_results)
 
     # Compact per-class mean-likelihood table (the Figure-6 numbers).
-    _write_figure6_csv(results, args.outdir)
+    write_figure6_table(results, args.outdir)
 
     # Per-configuration table (the supplemental-figure numbers).
-    _write_per_config_csv(results, args.outdir)
+    write_per_config_table(results, args.outdir)
 
 
-def _write_figure6_csv(results, outdir):
+def write_figure6_table(results, outdir):
     """Write mean_likelihood_figure6.csv: per-class mean likelihood (mean
     over the configurations in each dimensionality group), by path, plus the
     k=1 baseline.  This is the compact table behind Figure 6."""
@@ -196,7 +196,7 @@ def _write_figure6_csv(results, outdir):
     print(f"  wrote {os.path.join(outdir, 'mean_likelihood_figure6.csv')}")
 
 
-def _write_per_config_csv(results, outdir):
+def write_per_config_table(results, outdir):
     """Write mean_likelihood_per_config.csv: per-configuration bootstrap mean
     likelihood for each individual k=3 configuration (rows = class x
     configuration), by hive group, plus the pure-chance baseline -- the means

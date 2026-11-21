@@ -42,6 +42,11 @@ import torch.nn.functional as F
 from einops import rearrange
 
 
+#: Grid geometry of the committed checkpoints: (depth, height, width) =
+#: 20 comb sides x 52 x 104.
+CANONICAL_GRID_SHAPE = (20, 52, 104)
+
+
 def lecun_normal_masked_conv3d(tensor: torch.Tensor, mask_center: bool = True):
     """LeCun-normal init for the (center-masked) conv kernel; the masked
     center pixel is excluded from the fan-in so the variance stays correct."""

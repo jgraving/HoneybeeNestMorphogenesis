@@ -31,11 +31,13 @@ This repository contains
 * **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — the
   comb-content analysis notebooks (consumes the deposited `CombMasks_*.npy`
   and `df_*.csv` files in the repository root).
-* **`autoregressive_model.ipynb`** — the cleaned-up original model
-  notebook (load/relabel, align, crop, model, dataset, evaluation of the
-  eight committed checkpoints on the 18-hive set, and the paper's model
-  figures). The training loop is kept as a commented provenance reference;
-  the notebook's stored outputs show the prediction run and every figure.
+* **`autoregressive_model.ipynb`** — the model notebook, driven entirely by
+  the `combinator` package: load/relabel, align, crop, a 2-epoch training
+  smoke test (plus the full `train_all_v2` reproduction call behind a flag —
+  the committed checkpoints are never re-trained by the notebook), evaluation
+  of the eight committed checkpoints on the 18-hive set, and all paper
+  figures displayed in-cell. Its stored outputs include the prediction run
+  and every figure image.
 
 ---
 
@@ -219,8 +221,10 @@ dimension-averaged Figure-6 numbers.
   of each committed checkpoint.
 * `results/manifest.json` lists every result file with its SHA-256, so a
   downloaded copy can be validated byte-for-byte.
-* `make_figures.py` reproduces `figures/` from the committed weights plus
-  the data, and `autoregressive_model.ipynb` walks through it cell by cell.
+* `python -m combinator.make_figures --data data/AllColoniesCombinedDS48v2.zip
+  --models-dir models --outdir figures` reproduces `figures/` from the
+  committed weights plus the data, and `autoregressive_model.ipynb` walks
+  through the same pipeline as the package API, cell by cell.
 
 ## License
 

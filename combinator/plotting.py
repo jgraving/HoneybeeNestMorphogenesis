@@ -161,12 +161,14 @@ def plot_likelihood_with_bootstrap(results, model_keys, num_classes, class_names
 
 def plot_control_physical_simulated(results, model_keys, num_classes, class_names,
                                      n_bootstrap=1000, ci=95, random_state=42,
-                                     out="control_physical_simulated_likelihood.pdf"):
+                                     out=None):
     """Figure 6: three panels -- control (unshuffled), physically shuffled
     treatment, and simulated (manually) shuffled.  Hive blocks in ``results``
     must be ordered [control(6), physical(6), manual(6)].  Each panel calls
     ``plot_likelihood_with_bootstrap`` with the matching hive slice (no copy of
-    the large per-hive arrays is made)."""
+    the large per-hive arrays is made).  With ``out`` a path, the figure is
+    saved there (and closed); otherwise the open ``(fig, axes)`` is returned
+    for display."""
     fig, axes = plt.subplots(1, 3, figsize=(10, 3.333), dpi=300, sharey=True)
 
     panels = [
@@ -189,9 +191,11 @@ def plot_control_physical_simulated(results, model_keys, num_classes, class_name
     for ax in axes:
         ax.set_xlim(-0.25, 2.25)
     plt.tight_layout()
-    plt.savefig(out, bbox_inches="tight")
-    plt.close(fig)
-    return out
+    if out is not None:
+        plt.savefig(out, bbox_inches="tight")
+        plt.close(fig)
+        return out
+    return fig, axes
 
 
 # ---------------------------------------------------------------------------
@@ -199,9 +203,11 @@ def plot_control_physical_simulated(results, model_keys, num_classes, class_name
 # ---------------------------------------------------------------------------
 
 def plot_model_scatter3d_simplified(results, model_keys, model_idx=0, hive_idx=0,
-                                    week=0, out="3d_predictions_likelihood.png"):
+                                    week=0, out="3d_predictions_likelihood.png",
+                                    show: bool = False):
     """Figure 6B: ground truth / predictions / likelihood as 3D voxel clouds,
-    with frame pairs stacked along depth and Side A/B interleaved along width."""
+    with frame pairs stacked along depth and Side A/B interleaved along width.
+    ``show=True`` returns the open figure for display instead of saving."""
     simple_names = ['background', 'wood', 'empty_comb', 'any_brood', 'pollen',
                     'nectar_honey']
     num_classes = len(simple_names)
@@ -296,6 +302,8 @@ def plot_model_scatter3d_simplified(results, model_keys, model_idx=0, hive_idx=0
     cbar_likelihood.set_label("Likelihood", fontsize=8)
 
     plt.subplots_adjust(top=0.8, hspace=0.0)
+    if show:
+        return fig
     plt.savefig(out, dpi=600, bbox_inches="tight")
     plt.close(fig)
     return out
@@ -472,12 +480,14 @@ def plot_config_by_treatment(results, model_keys, num_classes, class_names,
 def plot_control_physical_simulated_full(results, model_keys, num_classes,
                                          class_names, n_bootstrap=1000, ci=95,
                                          random_state=42,
-                                         out="supplement_config_likelihood.pdf"):
+                                         out=None):
     """The per-configuration supplemental figure: three panels -- control
     (unshuffled), physically shuffled treatment, and simulated (manually)
     shuffled -- each showing all seven individual receptive-field
     configurations.  Hive blocks in ``results`` must be ordered
-    [control(6), physical(6), manual(6)]."""
+    [control(6), physical(6), manual(6)].  With ``out`` a path, the figure is
+    saved there (and closed); otherwise the open ``(fig, axes)`` is returned
+    for display."""
     fig, axes = plt.subplots(1, 3, figsize=(15, 4), dpi=300, sharey=True)
 
     panels = [
@@ -497,9 +507,11 @@ def plot_control_physical_simulated_full(results, model_keys, num_classes,
     axes[1].set_ylabel('')
     axes[2].set_ylabel('')
     plt.tight_layout()
-    plt.savefig(out, bbox_inches="tight")
-    plt.close(fig)
-    return out
+    if out is not None:
+        plt.savefig(out, bbox_inches="tight")
+        plt.close(fig)
+        return out
+    return fig, axes
 
 
 def plot_likelihood_over_time(results, model_keys, class_names, model_idx=0,
@@ -568,8 +580,10 @@ def plot_likelihood_over_time(results, model_keys, class_names, model_idx=0,
     return fig, ax
 
 
-def plot_kernel_legend_subset(out="spatial_legend_subset.pdf"):
-    """Legend showing the 1D, 2D and 3D masked 3x3x3 receptive fields."""
+def plot_kernel_legend_subset(out="spatial_legend_subset.pdf",
+                                show: bool = False):
+    """Legend showing the 1D, 2D and 3D masked 3x3x3 receptive fields.
+    ``show=True`` returns the open figure for display instead of saving."""
     kernel_shapes = [(3, 1, 1), (3, 1, 3), (3, 3, 3)]
     x_labels = ["1D", "2D", "3D"]
     n = len(kernel_shapes)
@@ -585,6 +599,8 @@ def plot_kernel_legend_subset(out="spatial_legend_subset.pdf"):
         ax.view_init(elev=30, azim=120)
         ax.dist = 7
         ax.text(1, 6.8, 8.5, label, ha='center', va='bottom', fontsize=7.5)
+    if show:
+        return fig
     plt.savefig(out, bbox_inches="tight")
     plt.close(fig)
     return out
