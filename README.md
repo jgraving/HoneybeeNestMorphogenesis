@@ -19,10 +19,10 @@ This repository contains
 * **`data/`** — the model's detailed 21-class colony array
   (`AllColoniesCombinedDS48v2.zip`, ~3.6 MB; zipped because the raw 156 MB
   `.npy` exceeds GitHub's 100 MB/file cap).
-* **`results/`** — the full per-hive, per-voxel outputs of those eight models
-  (ground truth, predictions, entropy and log-likelihood for all 18 hives:
-  6 control, 6 physically-shuffled, 6 simulated; ≈400 MB in 145 small files)
-  with a `manifest.json` of SHA-256 checksums.
+* **`results/`** — 144 cached prediction files (about 398 MiB) with
+  ground truth, predictions, entropy, and log-likelihood for eight models
+  across 18 evaluation hives. The [manifest](results/manifest.json) records
+  the SHA-256 checksum for each file.
 * **`figures/`** — the model outputs of the paper (Figure 6 likelihood
   comparison, Figure 6B 3D visualization, kernel legend, and the supplemental
   per-configuration figure of all individual 1D/2D/3D contexts) plus the CSVs
@@ -32,95 +32,101 @@ This repository contains
   comb-content analysis notebooks (consumes the deposited `CombMasks_*.npy`
   and `df_*.csv` files in the repository root).
 * **`autoregressive_model.ipynb`** — the model notebook, driven entirely by
-  the `combinator` package: load/relabel, align, crop, a 2-epoch training
-  smoke test (plus the full `train_all_v2` reproduction call behind a flag —
-  the committed checkpoints are never re-trained by the notebook), evaluation
-  of the eight committed checkpoints on the 18-hive set, and all paper
-  figures displayed in-cell. Its stored outputs include the prediction run
-  and every figure image.
+  the `combinator` package. It walks through preprocessing, evaluation of
+  the fitted checkpoints, and rendering Figures 6 and S11. It also includes
+  a two-epoch training smoke test and an optional `train_all_v2` recipe.
+  The figure outputs use the fitted checkpoints or their cached predictions.
 
 ---
 
 ## Installation
 
-The environment is managed with [uv](https://github.com/astral-sh/uv)
-(Python ≥ 3.11, e.g. the Python 3.12.3 used in the paper):
+The package requires Python 3.11 or later. Run the commands from the
+repository root. [uv](https://github.com/astral-sh/uv) installs the package
+in an editable environment using [the lock file](uv.lock).
 
 ```bash
-uv sync --all-extras     # core + comb-content notebook dependencies
-# or, for just the model package (no OpenCV/landstats extras):
-uv sync
+uv sync --locked
 ```
 
-`uv sync` reads `pyproject.toml` and [the lock file `uv.lock`](uv.lock), so
-the paper's pins are reproduced exactly (e.g. `pytorch-lightning==2.5.0`).
-On a machine with a CUDA GPU, install a CUDA-enabled PyTorch first
-(or add it to the project) so training/evaluation can use the GPU:
-
-```bash
-uv sync --all-extras
-uv pip install "torch>=2.0+cu124" --index-url https://download.pytorch.org/whl/cu124
-```
-
-`uv run python` (or activate `.venv`) from the repository root is all that
-is needed to use the package; it is installed editable by `uv sync`.
+The `analysis` extra supplies dependencies for the comb-content workflows.
+Install it with `uv sync --locked --extra analysis`.
 
 ## Quick start
 
-All of the following runs on CPU; add `CUDA_VISIBLE_DEVICES=<n>` to use a
-GPU (selecting the device with `torch.cuda.device_count()`-style indexing,
-e.g. run with `CUDA_VISIBLE_DEVICES=1` to pin a specific card).
+Run the Python example with `uv run python` to evaluate the fitted 3D
+checkpoint on one colony-week. Set `device = "cuda:0"` to use a
+CUDA-enabled PyTorch build.
 
 ```python
-import numpy as np
-from combinator import load_grids, map_all_labels, process_grids, build_eval_hives
-from combinator import evaluate_spatial_classifier
-from combinator.models import load_any
+from combinator import (
+    build_eval_hives,
+    evaluate_spatial_classifier,
+    load_any,
+    load_grids,
+    map_all_labels,
+    process_grids,
+)
 
-# 1) Load the detailed 21-class masks and run the paper's spatial pipeline
-#    (class remap -> phase-correlation alignment to a global mean wood
-#    template -> mean-wood bounding-box crop -> (20, 52, 104) grids of the
-#    6 simplified classes).
-grids = load_grids("data/AllColoniesCombinedDS48v2.zip")      # per-colony stack (zipped .npy)
-grids = map_all_labels(grids)
-grids = process_grids(grids)            # takes ~30 s on CPU
+grids = load_grids("data/AllColoniesCombinedDS48v2.zip")
+grids = process_grids(map_all_labels(grids))
+hives = build_eval_hives(grids, num_control=6, seed=42)
 
-# 2) Build the 18-hive evaluation corpus: 6 control + 6 physically
-#    shuffled + 6 simulated (frame-pair-shuffled) hives.
-hives = build_eval_hives(grids, num_control=6)
-
-# 3) Load a paper model (filename encodes its architecture) and evaluate it.
-model = load_any("models/spatial_classifier_v2_k3_dTrue_hTrue_wTrue_posTrue_ctxTrue_int1.pth")
-results = evaluate_spatial_classifier(model, hives, device="cpu")
-print(results["hives"][0]["predictions"][0].argmax())  # ...
+device = "cpu"
+checkpoint = "models/spatial_classifier_v2_k3_dTrue_hTrue_wTrue_posTrue_ctxTrue_int1.pth"
+model = load_any(checkpoint, device=device)
+example = [hives[0][:1]]
+results = evaluate_spatial_classifier(model, example, device=device)
+print(results["hives"][0]["predictions"].shape)
 ```
 
-Reproduce the committed figures and CSV from the committed weights
-(default palette: the published model-figure colors — seaborn
-"colorblind" with the wood class in red; `--palette seaborn` uses the
-untouched seaborn palette, `--palette content` the nest-content palette
-of Figures 1–5):
+### Reproduce Figures 6 and S11 from the fitted weights
+
+The command writes the figures and likelihood tables to `figures_out/`.
 
 ```bash
 uv run python -m combinator.make_figures \
     --data data/AllColoniesCombinedDS48v2.zip \
-    --models-dir models --outdir figures_out
-CUDA_VISIBLE_DEVICES=1 uv run python -m combinator.make_figures \
-    --data ... --device cuda:0   # GPU
+    --models-dir models --outdir figures_out --device cpu
 ```
 
-Reconstruct the committed `results/` directory into a plain dict in memory
-(with SHA-256 verification):
+Pass `--device cuda:0` for GPU inference. The default `paper` palette uses
+seaborn's colorblind colors with wood in dark red. `--palette seaborn` uses
+seaborn's original colors and `--palette content` uses the Figures 1–5 palette.
 
-```python
-from combinator.results_io import load_results
-results = load_results("results")   # {config_tuple: {"hives": [...]}}
-```
-
-Validate an unpacked `results/` copy at any time:
+### Verify and use the cached predictions
 
 ```bash
 uv run python -m combinator.results_io verify results
+```
+
+To regenerate the figures and tables from the cache, run the following
+with `uv run python`.
+
+```python
+from combinator import (
+    load_results,
+    make_figures,
+    write_figure6_table,
+    write_per_config_table,
+)
+
+cached = load_results("results")
+outdir = "figures_out/cached"
+make_figures(cached, outdir)
+write_figure6_table(cached, outdir)
+write_per_config_table(cached, outdir)
+```
+
+The cache stores entropy and log-likelihood in `float16`. Recomputing
+both committed CSV summaries from the cached likelihoods agreed within
+`0.0001` at their displayed precision.
+
+The model notebook offers the same cache workflow through `USE_CACHED_RESULTS`.
+Open it from the repository root with Jupyter.
+
+```bash
+uv run --with notebook jupyter notebook autoregressive_model.ipynb
 ```
 
 ## Data and provenance
@@ -144,12 +150,9 @@ download or unzip step is needed.
 | `models/*.pth` | — | — | in this repo | eight fitted checkpoints (see [`models/MANIFEST.md`](models/MANIFEST.md)) |
 | `results/*.npz` | — | — | in this repo | per-hive model outputs (see `results/manifest.json`) |
 
-The two families should not be conflated: the **model** works on the
-detailed DS48v2 masks (local). The **deposited** `CombMasks_*.npy` and
-`df_*.csv` are the products of the comb-content analysis (`*_aligned` are
-already aligned to a 52×100 bounding box; `*_simple`/`*_crop` are the
-pre-alignment forms) and are the inputs to the two comb-content notebooks.
-They carry different class taxonomies and are not the model's training input.
+The model uses the detailed 21-class DS48v2 masks. The observational
+workflows use the released `CombMasks_*.npy` arrays and their derived
+`df_*.csv` tables, which have their own label taxonomies and alignment.
 
 ### Note on grid geometry
 
@@ -165,8 +168,8 @@ the code matches them exactly; loading is strict (`weights_only=True`,
 
 ## Model
 
-`SpatialClassifier` (see `combinator/models.py` and the first-author
-notebook it ports) is a per-voxel autoregressive content classifier:
+`SpatialClassifier` is a per-voxel autoregressive content classifier.
+See the implementation in [`combinator/models.py`](combinator/models.py).
 
 * **Class embedding**: a learned (classes × 128) table maps each voxel's
   integer label to a 128-d vector; a per-class bias is added.
@@ -182,11 +185,17 @@ notebook it ports) is a per-voxel autoregressive content classifier:
 * **Tied head**: logits = `output @ class_embedding.T`, softmaxed to a
   distribution over the 6 classes.
 
-Training (paper, section "Masked-convolutional autoregressive model"):
-AdamW (base lr 1e-3, weight decay 1e-5, betas (0.9, 0.95)); the class
-embedding and positional-bias groups run at 10× the base lr; a 5-epoch
-linear warmup then cosine annealing, 200 epochs total; batch size 8;
-class-weighted cross-entropy with inverse-frequency weights.
+The training recipe uses AdamW with a base learning rate of `1e-3`,
+weight decay of `1e-5`, and betas `(0.9, 0.95)`. The class embedding and
+positional parameters use 10 times the base learning rate. The 200-epoch
+schedule uses five warmup epochs followed by cosine annealing, with a batch
+size of eight and inverse-frequency class weights.
+
+After preprocessing, pass the six controls (`grids[:6]`) to
+`combinator.train_all_v2` to retrain all eight configurations. Set
+`models_dir="retrained_models"` to write the new checkpoints there.
+The recipe uses width-flip augmentation during training.
+[Checkpoint and training details](models/MANIFEST.md)
 
 ### The 8 committed checkpoints
 
@@ -197,38 +206,25 @@ class-weighted cross-entropy with inverse-frequency weights.
 | 3 × 2D: d+h, d+w, h+w | Two axes |
 | 1 × 3D: d+h+w | Full 3-D context — the main model |
 
-Figure 6 averages the 1-D and 2-D configurations separately and shows the
-3-D model and the k=1 baseline. The values for the *individual* 1D/2D/3D
-configurations (the paper's supplemental per-configuration figure) are in
-**`figures/mean_likelihood_per_config.csv`**, plotted in
-**`figures/supplement_config_likelihood.pdf`** (mean-likelihood per
-configuration and treatment panel, with the pure-chance baseline at
-1/num\_classes); **`figures/mean_likelihood_figure6.csv`** holds the
-dimension-averaged Figure-6 numbers.
+Figure 6 groups the spatial configurations by dimensionality, bootstraps
+pooled colony-week likelihoods within each group, and uses the fitted
+`k=1` model as a baseline. [Figure 6](figures/control_physical_simulated_likelihood.pdf)
+and [likelihood table](figures/mean_likelihood_figure6.csv)
+
+Figure S11 shows the seven spatial configurations individually, with a
+colony-then-week bootstrap and a chance baseline of `1/6`.
+[Figure S11](figures/supplement_config_likelihood.pdf)
+and [likelihood table](figures/mean_likelihood_per_config.csv)
 
 ## What "shuffling" means
 
-* **Control (shuffled = "no")**: the 6 `DD*` colonies, frames in natural
-  order.
-* **Treatment (shuffled = "physical")**: the 6 `SH*` colonies, whose frames
-  were physically moved within the hive during the experiment.
-* **Simulated**: `DD1`…`DD6` with the ten frame-pairs (A+B) along the
-  depth axis randomly permuted, breaking global depth order while
-  keeping each pair of a frame together. Built with
-  `build_eval_hives(..., seed=42)`, deterministic.
-
-## Reproducibility checklist
-
-* `pyproject.toml` / `uv.lock` pin the software stack (Python ≥ 3.11;
-  e.g. `pytorch-lightning==2.5.0`, the version used in the paper).
-* `models/MANIFEST.md` lists the hyper-parameters and training seed context
-  of each committed checkpoint.
-* `results/manifest.json` lists every result file with its SHA-256, so a
-  downloaded copy can be validated byte-for-byte.
-* `python -m combinator.make_figures --data data/AllColoniesCombinedDS48v2.zip
-  --models-dir models --outdir figures` reproduces `figures/` from the
-  committed weights plus the data, and `autoregressive_model.ipynb` walks
-  through the same pipeline as the package API, cell by cell.
+* **Control** — DD1, DD2, DD4, DD5, DD6, and DD7, with frames in their
+  natural order.
+* **Physically shuffled** — SH2 through SH7, whose frames were moved
+  within the hive during the experiment.
+* **Simulated** — copies of the six controls with their ten frame pairs
+  permuted along the depth axis. The sides of each frame stay together.
+  `build_eval_hives(..., seed=42)` builds these permutations reproducibly.
 
 ## License
 
