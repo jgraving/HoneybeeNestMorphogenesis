@@ -11,7 +11,7 @@ model outputs --
 * ``3d_predictions_likelihood.png``              (Figure 6B: 3D voxel view),
 * ``spatial_legend_subset.pdf``                  (Figure S: kernel legend)
 
--- can be regenerated from a results dict (see ``combinator.eval``).
+-- can be reproduced from a results dict (see ``combinator.eval``).
 
 ``results`` is a dict keyed by a model key ``(kernel, d, h, w, pos, ctx,
 int)`` whose values are the per-model output of
