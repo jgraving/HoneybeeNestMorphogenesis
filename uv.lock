@@ -329,6 +329,75 @@ wheels = [
 ]
 
 [[package]]
+name = "combinator"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "einops" },
+    { name = "joblib" },
+    { name = "matplotlib" },
+    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "pandas" },
+    { name = "pingouin" },
+    { name = "pytorch-lightning" },
+    { name = "scikit-image" },
+    { name = "scikit-learn" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "seaborn" },
+    { name = "statsmodels" },
+    { name = "torch" },
+    { name = "tqdm" },
+]
+
+[package.optional-dependencies]
+analysis = [
+    { name = "alphashape" },
+    { name = "imageio" },
+    { name = "opencv-python" },
+    { name = "plotly" },
+    { name = "pylandstats" },
+    { name = "pysankey" },
+    { name = "ridgeplot" },
+]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "alphashape", marker = "extra == 'analysis'", specifier = ">=1.3" },
+    { name = "einops", specifier = ">=0.7" },
+    { name = "imageio", marker = "extra == 'analysis'", specifier = ">=2.31" },
+    { name = "joblib", specifier = ">=1.3" },
+    { name = "matplotlib", specifier = ">=3.7" },
+    { name = "networkx", specifier = ">=3.2" },
+    { name = "numpy", specifier = ">=1.24" },
+    { name = "opencv-python", marker = "extra == 'analysis'", specifier = ">=4.8" },
+    { name = "pandas", specifier = ">=2.0" },
+    { name = "pingouin", specifier = ">=0.7" },
+    { name = "plotly", marker = "extra == 'analysis'", specifier = ">=5.18" },
+    { name = "pylandstats", marker = "extra == 'analysis'", specifier = ">=2.7" },
+    { name = "pysankey", marker = "extra == 'analysis'", specifier = ">=0.0.1" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytorch-lightning", specifier = "==2.5.0" },
+    { name = "ridgeplot", marker = "extra == 'analysis'", specifier = ">=0.1.4" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
+    { name = "scikit-image", specifier = ">=0.21" },
+    { name = "scikit-learn", specifier = ">=1.3" },
+    { name = "scipy", specifier = ">=1.10" },
+    { name = "seaborn", specifier = ">=0.13" },
+    { name = "statsmodels", specifier = ">=0.14" },
+    { name = "torch", specifier = ">=2.0" },
+    { name = "tqdm", specifier = ">=4.65" },
+]
+provides-extras = ["analysis", "dev"]
+
+[[package]]
 name = "contourpy"
 version = "1.3.3"
 source = { registry = "https://pypi.org/simple" }
@@ -3154,75 +3223,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0e/30/0b77618f33fecbc2209c767cecca58bbf83947fc0018571542bf2b859865/shapely-2.2.0-cp315-cp315t-win_amd64.whl", hash = "sha256:287ec7602f7a114b862ae0123880e57160cebe059843a4c7028aaee9e74287f6", size = 1866197, upload-time = "2026-10-07T09:17:56.991Z" },
     { url = "https://files.pythonhosted.org/packages/06/2b/9837e94408335520f778b09067fced0a5d4b2feffa5ebf7119412eb18b00/shapely-2.2.0-cp315-cp315t-win_arm64.whl", hash = "sha256:e414c78bc81aadd76a429111a350f4ef3d05fc13019805617b524951258468e5", size = 1945749, upload-time = "2026-10-07T09:17:59.116Z" },
 ]
-
-[[package]]
-name = "combinator"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "einops" },
-    { name = "joblib" },
-    { name = "matplotlib" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "pandas" },
-    { name = "pingouin" },
-    { name = "pytorch-lightning" },
-    { name = "scikit-image" },
-    { name = "scikit-learn" },
-    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "scipy", version = "1.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "seaborn" },
-    { name = "statsmodels" },
-    { name = "torch" },
-    { name = "tqdm" },
-]
-
-[package.optional-dependencies]
-analysis = [
-    { name = "alphashape" },
-    { name = "imageio" },
-    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "opencv-python" },
-    { name = "plotly" },
-    { name = "pylandstats" },
-    { name = "pysankey" },
-    { name = "ridgeplot" },
-]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "alphashape", marker = "extra == 'analysis'", specifier = ">=1.3" },
-    { name = "einops", specifier = ">=0.7" },
-    { name = "imageio", marker = "extra == 'analysis'", specifier = ">=2.31" },
-    { name = "joblib", specifier = ">=1.3" },
-    { name = "matplotlib", specifier = ">=3.7" },
-    { name = "networkx", marker = "extra == 'analysis'", specifier = ">=3.2" },
-    { name = "numpy", specifier = ">=1.24" },
-    { name = "opencv-python", marker = "extra == 'analysis'", specifier = ">=4.8" },
-    { name = "pandas", specifier = ">=2.0" },
-    { name = "pingouin", specifier = ">=0.7" },
-    { name = "plotly", marker = "extra == 'analysis'", specifier = ">=5.18" },
-    { name = "pylandstats", marker = "extra == 'analysis'", specifier = ">=2.7" },
-    { name = "pysankey", marker = "extra == 'analysis'", specifier = ">=0.0.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytorch-lightning", specifier = "==2.5.0" },
-    { name = "ridgeplot", marker = "extra == 'analysis'", specifier = ">=0.1.4" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
-    { name = "scikit-image", specifier = ">=0.21" },
-    { name = "scikit-learn", specifier = ">=1.3" },
-    { name = "scipy", specifier = ">=1.10" },
-    { name = "seaborn", specifier = ">=0.13" },
-    { name = "statsmodels", specifier = ">=0.14" },
-    { name = "torch", specifier = ">=2.0" },
-    { name = "tqdm", specifier = ">=4.65" },
-]
-provides-extras = ["analysis", "dev"]
 
 [[package]]
 name = "statsmodels"

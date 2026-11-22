@@ -1,6 +1,7 @@
 # Honeybee Nest Morphogenesis — data and code
 
-Code and model weights for the honeybee nest content study in
+Analysis code, model weights, and data for the honeybee nest
+4D atlas study in
 
 > **Marting PR, Prathibha P, Koger B, Rogers SR, Graving JM, Smith ML.**
 > *Morphogenesis, differentiation, and robust multi-scale organization of the
@@ -25,9 +26,16 @@ This repository contains
   the SHA-256 checksum for each file.
 * **`figures/`** — the Figure 6 likelihood plots and 3D prediction example,
   Figure S11, the receptive-field legend, and the likelihood CSVs.
-* **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — the
-  observational notebooks, which read the released `CombMasks_*.npy` and
-  `df_*.csv` files in the repository root.
+* **`combinator/content/`** — the observational analyses
+  for Figures 1–5, organized into modules for seasonality, organization
+  at the cell, comb, and nest levels, specialization, and the shuffling
+  experiment. [Run the observational analyses](#reproduce-the-observational-analyses)
+* **`CombContent_Make.ipynb`** / **`CombContent_Analysis.ipynb`** — package-driven
+  notebooks with saved figure outputs and table checks.
+* **`tests/`** — checks for reported statistics, rebuilt table rows, and
+  figure generation.
+* **`figures/analysis/`** — 20 vector PDFs covering the supported panels
+  across Figures 1–5. [Reproduction coverage](RESULTS.md)
 * **`autoregressive_model.ipynb`** — the model notebook, driven entirely by
   the `combinator` package. It walks through preprocessing, evaluation of
   the fitted checkpoints, and rendering Figures 6 and S11. It also includes
@@ -162,6 +170,46 @@ threshold 0.5) of the aligned 77 × 116 comb image — exactly what
 `positional_embedding` shape `(1, 128, 20, 52, 104)`) are authoritative and
 the code matches them exactly; loading is strict (`weights_only=True`,
 `load_state_dict` strict).
+
+## Reproduce the observational analyses
+
+The analysis pipeline reads the released `CombMasks_*.npy` arrays and
+`df_*.csv` tables. Run the figure generator and the fast tests from the
+repository root.
+
+```bash
+uv sync --locked --extra analysis --extra dev
+uv run python -m combinator.make_analysis_figures --outdir figures_out/analysis
+uv run pytest -q
+```
+
+Use `--figs 1,3` to render a subset of figures. Run `uv run pytest -q -m slow`
+for the longer bootstrap, figure, and table checks. GitHub Actions runs
+Ruff and the fast tests on pushes and pull requests.
+
+### Rebuild derived tables
+
+Write the rebuilt tables to a separate directory so the released CSVs
+remain the reference inputs for the figures and tests.
+
+```bash
+uv run python -m combinator.make_content_tables \
+    --tables nearestdist --outdir rebuilt-tables
+```
+
+The available generators are `cellneib`, `cellfuture`, and `nearestdist`.
+The checks compare rebuilt rows with the released tables using tolerances
+for floating-point and Monte Carlo differences.
+
+### Reproduction coverage
+
+The tests cover reported values including week-10 composition, cluster
+metrics, cell specialization, and brood failure. Remaining gaps include
+the segmentation step behind Figure 1B, Figure 4C, some KS p-values,
+polarization and comb-specialization statistics, and missing inputs for
+some derived tables.
+The figure-to-code map lists the validation results and gaps for each
+panel. [RESULTS.md](RESULTS.md)
 
 ## Model
 

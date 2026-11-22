@@ -17,8 +17,12 @@ jobs:
           python-version: "3.12"
 
       - name: Install package (CPU torch) + extras
-        run: uv pip install --torch-backend=cpu -e ".[dev]"
+        run: uv pip install --torch-backend=cpu -e ".[analysis,dev]"
 
       - name: Lint (ruff)
-        run: ruff check combinator
+        run: ruff check combinator tests
 
+      - name: Tests (fast suite)
+        run: pytest -q
+        env:
+          MPLBACKEND: Agg
